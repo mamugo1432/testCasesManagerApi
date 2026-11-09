@@ -17,6 +17,7 @@ import es.test.manager.domain.model.Role;
 import es.test.manager.domain.port.out.ProjectLimitProvider;
 import es.test.manager.domain.port.out.ProjectRepository;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +48,15 @@ class ProjectServiceTest {
     private void allowCreation() {
         given(projectLimitProvider.maxProjectsPerUser()).willReturn(10);
         given(projectRepository.countByUserId(7L)).willReturn(0L);
+    }
+
+    private static Project project(Long id, String title, LocalDateTime createdAt) {
+        return Project.builder()
+                .id(id)
+                .userId(7L)
+                .title(title)
+                .createdAt(createdAt)
+                .build();
     }
 
     @Test
@@ -135,5 +145,32 @@ class ProjectServiceTest {
                 .isInstanceOf(ProjectLimitExceededException.class);
 
         verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    void listReturnsTheProjectsInTheOrderDeliveredByThePort() {
+        Project first = project(1L, "Primero", LocalDateTime.of(2026, 11, 9, 12, 0));
+        Project second = project(2L, "Segundo", LocalDateTime.of(2026, 11, 8, 12, 0));
+        given(projectRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(7L)).willReturn(List.of(first, second));
+
+        List<ProjectResponse> response = projectService.list(USER);
+
+        assertThat(response).extracting(ProjectResponse::id).containsExactly(1L, 2L);
+        assertThat(response.get(0).title()).isEqualTo("Primero");
+        assertThat(response.get(0).createdAt()).isEqualTo("09/11/2026");
+    }
+
+    @Test
+    void listReturnsAnEmptyListWhenTheUserHasNoProjects() {
+        given(projectRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(7L)).willReturn(List.of());
+
+        assertThat(projectService.list(USER)).isEmpty();
+    }
+
+    @Test
+    void listQueriesOnlyTheAuthenticatedUsersProjects() {
+        projectService.list(USER);
+
+        verify(projectRepository).findAllByUserIdOrderByCreatedAtDescIdDesc(7L);
     }
 }

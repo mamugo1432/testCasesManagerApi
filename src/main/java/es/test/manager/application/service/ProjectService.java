@@ -6,10 +6,12 @@ import es.test.manager.domain.exception.ProjectLimitExceededException;
 import es.test.manager.domain.model.AuthenticatedUser;
 import es.test.manager.domain.model.Project;
 import es.test.manager.domain.port.in.CreateProjectUseCase;
+import es.test.manager.domain.port.in.ListProjectsUseCase;
 import es.test.manager.domain.port.out.ProjectLimitProvider;
 import es.test.manager.domain.port.out.ProjectRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** Application service implementing the project use cases. */
 @Service
 @RequiredArgsConstructor
-public class ProjectService implements CreateProjectUseCase {
+public class ProjectService implements CreateProjectUseCase, ListProjectsUseCase {
 
     private static final DateTimeFormatter RESPONSE_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -44,6 +46,14 @@ public class ProjectService implements CreateProjectUseCase {
                 .build();
 
         return toResponse(projectRepository.save(project));
+    }
+
+    /** RF-016, RF-017, RF-018, RF-019. The port already filters and orders. */
+    @Override
+    public List<ProjectResponse> list(AuthenticatedUser user) {
+        return projectRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(user.getId()).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     private ProjectResponse toResponse(Project project) {

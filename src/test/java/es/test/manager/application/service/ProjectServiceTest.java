@@ -205,4 +205,47 @@ class ProjectServiceTest {
                 .isInstanceOf(ProjectNotFoundException.class)
                 .hasMessage("Proyecto no encontrado");
     }
+
+    @Test
+    void deleteRemovesAnOwnProject() {
+        Project project = project(4L, "Mío", LocalDateTime.of(2026, 11, 7, 9, 30));
+        given(projectRepository.findByIdAndUserId(4L, 7L)).willReturn(Optional.of(project));
+
+        projectService.delete(4L, USER);
+
+        verify(projectRepository).deleteById(4L);
+    }
+
+    @Test
+    void deleteThrowsNotFoundAndRemovesNothingForAForeignOrMissingProject() {
+        given(projectRepository.findByIdAndUserId(8L, 7L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.delete(8L, USER))
+                .isInstanceOf(ProjectNotFoundException.class)
+                .hasMessage("Proyecto no encontrado");
+
+        verify(projectRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteFreesASlotSoTheUserCanCreateAgain() {
+        given(projectLimitProvider.maxProjectsPerUser()).willReturn(10);
+        given(projectRepository.countByUserId(7L)).willReturn(10L, 9L);
+        assertThatThrownBy(() -> projectService.create(new CreateProjectRequest("Undécimo"), USER))
+                .isInstanceOf(ProjectLimitExceededException.class);
+
+        Project project = project(10L, "Antiguo", LocalDateTime.of(2026, 11, 1, 8, 0));
+        given(projectRepository.findByIdAndUserId(10L, 7L)).willReturn(Optional.of(project));
+        projectService.delete(10L, USER);
+
+        given(projectRepository.save(any(Project.class))).willAnswer(invocation -> {
+            Project saved = invocation.getArgument(0);
+            saved.setId(11L);
+            return saved;
+        });
+        ProjectResponse response = projectService.create(new CreateProjectRequest("Nuevo"), USER);
+
+        assertThat(response.id()).isEqualTo(11L);
+        verify(projectRepository).deleteById(10L);
+    }
 }

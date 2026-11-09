@@ -7,6 +7,7 @@ import es.test.manager.domain.exception.ProjectNotFoundException;
 import es.test.manager.domain.model.AuthenticatedUser;
 import es.test.manager.domain.model.Project;
 import es.test.manager.domain.port.in.CreateProjectUseCase;
+import es.test.manager.domain.port.in.DeleteProjectUseCase;
 import es.test.manager.domain.port.in.GetProjectUseCase;
 import es.test.manager.domain.port.in.ListProjectsUseCase;
 import es.test.manager.domain.port.out.ProjectLimitProvider;
@@ -21,7 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 /** Application service implementing the project use cases. */
 @Service
 @RequiredArgsConstructor
-public class ProjectService implements CreateProjectUseCase, ListProjectsUseCase, GetProjectUseCase {
+public class ProjectService
+        implements CreateProjectUseCase, ListProjectsUseCase, GetProjectUseCase, DeleteProjectUseCase {
 
     private static final DateTimeFormatter RESPONSE_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -65,6 +67,19 @@ public class ProjectService implements CreateProjectUseCase, ListProjectsUseCase
                 .findByIdAndUserId(id, user.getId())
                 .map(this::toResponse)
                 .orElseThrow(ProjectNotFoundException::new);
+    }
+
+    /**
+     * RF-022, RF-025, RF-026, RF-027. Only the project row is deleted; the database removes its
+     * test cases, steps and tag associations through {@code ON DELETE CASCADE}.
+     */
+    @Override
+    @Transactional
+    public void delete(Long id, AuthenticatedUser user) {
+        Project project = projectRepository
+                .findByIdAndUserId(id, user.getId())
+                .orElseThrow(ProjectNotFoundException::new);
+        projectRepository.deleteById(project.getId());
     }
 
     private ProjectResponse toResponse(Project project) {

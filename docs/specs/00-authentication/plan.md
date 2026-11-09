@@ -13,9 +13,9 @@ tests. Cada parte indica los RF que cubre. Sin código: el detalle concreto
 | D2 | **Sin refresh token**: un solo access token con expiración configurable (24h por defecto) | Access + refresh token persistente | El refresh obligaría a persistir tokens y a tocar el esquema SQL (prohibido sin aprobación); el alcance actual no lo requiere | RF-012 |
 | D3 | Cifrado con **BCrypt** vía `PasswordEncoder` de Spring Security | Argon2, SHA-256 puro | Argon2 requiere dependencia extra; SHA-256 sin sal es inseguro. BCrypt viene en Spring Security y aplica sal automática | RF-009 |
 | D4 | La **unicidad case-insensitive de username/email la garantiza la BD** (colación `utf8mb4_0900_ai_ci` del script existente); no se normaliza en la aplicación | Guardar username/email en minúsculas; comparar en el servicio antes de insertar | El índice único ya compara sin mayúsculas; normalizar en app perdería el formato original mostrado y exigiría lógica duplicada | RF-008 |
-| D5 | El registro aplica **trim de espacios exteriores al username en la capa de aplicación** antes de validar y guardar | Trim solo en el controlador; trim en BD | La normalización es una regla de negocio y vive en aplicación (constitución 5); el controlador no debe transformar datos | RF-002 |
-| D6 | El login **no aplica trim**; identificador y contraseña se comparan tal cual | Trim automático en login por simetría con el registro | La spec lo prohíbe explícitamente: `  Ana` no es `Ana` | RF-011 |
-| D7 | La confirmación de contraseña se valida con **`@AssertTrue`** en el DTO de registro (validación a nivel de clase entre campos) | Comprobación manual en el servicio | Es una validación de entrada, no una regla de negocio; así el servicio solo recibe datos ya coherentes (constitución 6) | RF-005 |
+| D5 | El registro **no normaliza el username**: se valida y se guarda tal cual lo escribe el usuario, con sus espacios exteriores | Trim en el registro (aplicación o controlador) | La spec no recorta: lo que el usuario elige es lo que se guarda y lo que deberá escribir al entrar; solo se rechazan los usernames en blanco o de solo espacios | RF-002 |
+| D6 | El login **no aplica trim**; identificador y contraseña se comparan tal cual | Trim automático en login | La spec lo prohíbe explícitamente: `  Ana` no es `Ana`. Es coherente con el registro, que también guarda el username sin recortar | RF-011 |
+| D7 | La confirmación de contraseña se valida con **`@AssertTrue`** en el DTO de registro (validación a nivel de clase entre campos) | Comprobación manual en el servicio | Es una validación de entrada, no una regla de negocio; así el servicio solo recibe datos ya coherentes (constitución 6). El error se publica como `passwordConfirmed` y el frontend lo mapea al campo de confirmación (`confirmPassword`); contrato aceptado, no se renombra | RF-005 |
 | D8 | El login resuelve el identificador (**username o email**) con **una única consulta** `WHERE username = ? OR email = ?` | Dos consultas consecutivas (buscar por username, luego por email) | La colación `ai_ci` hace ambas comparaciones case-insensitive gratis; una consulta es más simple y hace un solo viaje a BD. Ambos campos son únicos, así que el resultado es a lo sumo uno | RF-010, RF-013 |
 | D9 | El 401 de login fallido sale de **una única excepción de dominio** (`InvalidCredentialsException`) con mensaje genérico | Excepciones distintas para «usuario no existe» y «contraseña incorrecta» | Revelaría qué usernames/emails existen (enumeración de usuarios) | RF-013 |
 | D10 | El identificador del usuario autenticado viaja en el **JWT** (claims: id, username, email) y `/me` lo lee de ahí sin consultar BD | Consultar la BD en cada validación | Como no hay gestión de cuenta (email/username inmutables), los claims no se desactualizan; se evita un viaje a BD por petición | RF-014, RF-016 |
@@ -77,7 +77,8 @@ Siguiendo la estructura hexagonal de la skill, con los paquetes de
 | `port/in/SessionUseCase` | Contrato: obtener usuario del token actual | RF-014 |
 | `port/out/UserRepository` | Contrato: buscar y guardar usuarios | RF-006, RF-007, RF-010 |
 | `port/out/TokenService` | Contrato: generar y validar tokens | RF-010, RF-012, RF-015 |
-| `exception/UserAlreadyExistsException` | Username o email duplicado | RF-006, RF-007 |
+| `exception/InvalidUsernameException` | Username ya registrado | RF-006 |
+| `exception/InvalidEmailException` | Email ya registrado | RF-007 |
 | `exception/InvalidCredentialsException` | Login fallido (mensaje genérico) | RF-013 |
 | `exception/InvalidTokenException` | Token ausente/inválido/caducado | RF-015 |
 
@@ -106,7 +107,7 @@ Siguiendo la estructura hexagonal de la skill, con los paquetes de
 
 | Regla | Mecanismo previsto | RF |
 |---|---|---|
-| Username obligatorio, 3–50, sin espacios exteriores | `@NotBlank` + `@Size` + trim en el servicio antes de validar/guardar | RF-002 |
+| Username obligatorio, 3–50, sin recorte | `@NotBlank` + `@Size` sobre el valor recibido; se guarda tal cual | RF-002 |
 | Email obligatorio y con formato | `@NotBlank` + `@Email` | RF-003 |
 | Contraseña 8–20, no en blanco, sin espacios | `@NotBlank` + `@Size(min=8, max=20)` + `@Pattern` sin espacios | RF-004 |
 | Confirmación igual a contraseña | `@AssertTrue` a nivel de clase en `RegisterRequest` | RF-005 |
@@ -119,8 +120,8 @@ se asume cubierto por el script SQL validado.
 
 | Test | Qué verifica | RF |
 |---|---|---|
-| `AuthServiceTest` — registro | Crea el usuario con la contraseña cifrada (nunca el texto plano llega al repositorio) y sin espacios exteriores en el username | RF-001, RF-002, RF-009 |
-| `AuthServiceTest` — duplicados | Username o email existente lanza `UserAlreadyExistsException` antes de guardar | RF-006, RF-007 |
+| `AuthServiceTest` — registro | Crea el usuario con la contraseña cifrada (nunca el texto plano llega al repositorio) y conserva el username tal cual se recibió, espacios incluidos | RF-001, RF-002, RF-009 |
+| `AuthServiceTest` — duplicados | Username existente lanza `InvalidUsernameException` o email existente lanza `InvalidEmailException`, antes de guardar | RF-006, RF-007 |
 | `AuthServiceTest` — login ok | Identificador por username o por email devuelve token con los claims correctos | RF-010 |
 | `AuthServiceTest` — login literal | `  Ana` no coincide con `Ana` (no se recorta) | RF-011 |
 | `AuthServiceTest` — login fallido | Usuario inexistente y contraseña incorrecta lanzan la misma `InvalidCredentialsException` | RF-013 |
@@ -129,14 +130,14 @@ se asume cubierto por el script SQL validado.
 | `AuthControllerTest` | Códigos de estado: 201 registro, 200 login y `/me`, 400 validación con campos, 409 duplicado, 401 credenciales/token | RF-001, RF-010, RF-014 |
 | `GlobalExceptionHandlerTest` | Cada excepción de dominio produce el `ApiError` y código esperados, sin filtrar detalles internos | RF-002 a RF-007, RF-013, RF-015 |
 
-**Cobertura de RF**: RF-001 (AuthService, Controller), RF-002 (validación, trim), RF-003
-(email), RF-004 (contraseña), RF-005 (`@AssertTrue`), RF-006/RF-007
-(duplicados), RF-008 (BD; sin test unitario posible — verificado a nivel de
-script), RF-009 (cifrado), RF-010 (login), RF-011 (literal), RF-012
+**Cobertura de RF**: RF-001 (AuthService, Controller), RF-002 (validación),
+RF-003 (email), RF-004 (contraseña), RF-005 (`@AssertTrue`), RF-006/RF-007
+(duplicados), RF-008 (BD; sin test automatizado — verificación manual contra
+MySQL), RF-009 (cifrado), RF-010 (login), RF-011 (literal), RF-012
 (expiración), RF-013 (genérico), RF-014 (claims), RF-015 (filtro/token),
-RF-016 (SecurityConfig + filtro). El único RF sin test unitario es RF-008,
-que depende de la colación de MySQL y queda fuera del alcance de los tests
-unitarios decididos para el proyecto.
+RF-016 (SecurityConfig + filtro; `/me` con token válido). El único RF sin
+test automatizado es RF-008, que depende de la colación de MySQL y queda
+fuera del alcance de los tests decididos para el proyecto.
 
 ## Puntos abiertos
 

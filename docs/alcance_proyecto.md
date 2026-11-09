@@ -53,6 +53,16 @@ El usuario podrá:
 Un proyecto no tendrá descripción ni otros campos funcionales en el
 alcance actual.
 
+**Límite de proyectos (decisión de última hora):** cada usuario podrá
+tener como máximo **10 proyectos**. Si ya tiene 10, el backend rechazará
+la creación de otro con un error de conflicto (409) y el mensaje «No puedes
+crear más de 10 proyectos. Elimina uno para crear otro.», para que el
+frontend muestre el aviso y ofrezca borrar un proyecto. El usuario deberá
+eliminar uno antes de crear otro. El límite se aplica a todos los roles,
+incluido `ADMIN`, y no elimina automáticamente los proyectos existentes
+si se reduce por configuración. El listado no está paginado; por eso se
+fija este límite.
+
 **Regla al eliminar:** la interfaz pedirá confirmación antes de eliminar
 un proyecto. Al confirmar, también se eliminarán los test cases que
 pertenezcan a él y sus datos dependientes, como los pasos y las
@@ -335,6 +345,10 @@ partir de estas relaciones; no necesitan entidades propias.
     progreso, con independencia del resultado de ejecución, ya que el
     resultado de pasar o fallar no forma parte del modelo definido hasta
     ahora.
+12. Cada usuario puede poseer como máximo 10 proyectos. La creación por
+    encima del límite se rechaza con un error de conflicto (409) y no se
+    permite hasta que el usuario elimine uno. Los proyectos existentes
+    por encima del límite no se eliminan automáticamente.
 
 ## 6. Arquitectura y responsabilidades
 
@@ -409,6 +423,9 @@ funcionalidades, por ejemplo:
     cases de estos.
 -   Se puede crear un proyecto indicando un título y verlo en el
     listado.
+-   Un usuario no puede crear más de 10 proyectos; al intentar el
+    undécimo, recibe un error de conflicto (409) y debe eliminar uno
+    antes de crear otro.
 -   Al entrar en un proyecto se muestran únicamente sus test cases.
 -   Se pueden crear, consultar, editar y eliminar test cases.
 -   El detalle de un test case muestra su información y los pasos en el
@@ -470,6 +487,10 @@ decisiones durante el diseño detallado:
 3.  **Estadísticas circulares:** concretar la disposición visual cuando
     haya muchas etiquetas, ya que cada etiqueta tendrá su propio
     indicador circular.
+
+El límite de 10 proyectos por usuario se incorporó como decisión de
+última hora y ya forma parte del alcance (§3.2, §5 y §7); no queda como
+decisión pendiente.
 
 Las decisiones funcionales principales están cerradas. Estos detalles
 pueden concretarse al redactar las especificaciones SDD.

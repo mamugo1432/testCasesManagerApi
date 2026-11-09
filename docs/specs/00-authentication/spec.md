@@ -23,11 +23,12 @@ momento quién está conectado, sin exponer información sensible.
     frontend elige su flujo de usuario.
 
 - **RF-002** — El username debe ser obligatorio y tener entre 3 y 50
-  caracteres. Los espacios exteriores se eliminan antes de validar y
-  guardar: no se admiten usernames en blanco ni compuestos solo por
-  espacios, que se rechazan con un error de validación (400).
-  - *Por qué:* el username identifica al usuario de forma breve y legible,
-    y nunca debe contener espacios innecesarios por error de tecleo.
+  caracteres. No se recorta: se guarda y se valida tal cual lo escribe el
+  usuario, incluidos los espacios exteriores. Sí se rechazan con un error
+  de validación (400) los usernames en blanco o compuestos solo por
+  espacios.
+  - *Por qué:* el sistema no altera lo que el usuario eligió; los espacios
+    cuentan para la longitud y `Ana` y ` Ana` son usernames distintos.
 
 - **RF-003** — El email debe ser obligatorio y tener un formato válido.
   - *Por qué:* sirve como identificador de contacto y como alternativa de
@@ -119,6 +120,14 @@ momento quién está conectado, sin exponer información sensible.
   - *Por qué:* es la base sobre la que se apoyan las specs de proyectos y
     test cases.
 
+### Roles
+
+- **RF-017** — Toda cuenta debe tener un rol: `USER` al registrarse y `ADMIN`
+  para las cuentas que se designen manualmente en la base de datos. El token
+  debe llevar el rol y la respuesta del usuario autenticado debe exponerlo.
+  - *Por qué:* el frontend necesita distinguir al administrador y las specs
+    siguientes podrán restringir operaciones a `ADMIN`.
+
 ## Fuera de alcance
 
 - Gestión de cuenta: cambiar contraseña, editar username/email, borrar
@@ -129,34 +138,40 @@ momento quién está conectado, sin exponer información sensible.
 - Recuperación de contraseña olvidada.
 - Verificación del email (doble opt-in).
 - Bloqueo de cuentas, límite de intentos (rate limiting) y CAPTCHA.
-- Roles, permisos y administración de usuarios.
+- Roles, permisos y administración de usuarios: el rol `ADMIN` se asigna
+  manualmente en la base de datos y no hay endpoints de gestión. Quedan fuera
+  los permisos por recurso más allá de la distinción `ADMIN`/`USER`.
 
 ## Criterios de finalización
 
-- [ ] El registro con datos válidos crea la cuenta y responde 201 sin
+- [x] El registro con datos válidos crea la cuenta y responde 201 sin
   conceder sesión (RF-001).
-- [ ] El username admite 3–50 caracteres, se limpia de espacios exteriores
-  y los usernames en blanco o de solo espacios se rechazan con 400
-  (RF-002).
-- [ ] El email es obligatorio y con formato válido (RF-003).
-- [ ] La contraseña admite 8–20 caracteres; en blanco o con espacios se
+- [x] El username admite 3–50 caracteres sin recortar espacios y los
+  usernames en blanco o de solo espacios se rechazan con 400 (RF-002).
+- [x] El email es obligatorio y con formato válido (RF-003).
+- [x] La contraseña admite 8–20 caracteres; en blanco o con espacios se
   rechaza con 400 (RF-004).
-- [ ] El registro pide la contraseña dos veces y rechaza con 400 si no
+- [x] El registro pide la contraseña dos veces y rechaza con 400 si no
   coinciden, sin crear la cuenta (RF-005).
-- [ ] Un registro con username o email ya existentes responde 409 con
+- [x] Un registro con username o email ya existentes responde 409 con
   mensaje claro (RF-006, RF-007).
 - [ ] No pueden coexistir usernames o emails que solo difieran en
-  mayúsculas (RF-008).
-- [ ] Ninguna contraseña se almacena en texto plano: se cifra con BCrypt vía
+  mayúsculas (RF-008). _Pendiente de verificación manual contra la BD con
+  colación `utf8mb4_0900_ai_ci` y el índice único del script SQL; sin test
+  automatizado, según `plan.md`._
+- [x] Ninguna contraseña se almacena en texto plano: se cifra con BCrypt vía
   `PasswordEncoder` (RF-009).
-- [ ] El login funciona indistintamente con username o email y responde 200
+- [x] El login funciona indistintamente con username o email y responde 200
   con token (RF-010).
-- [ ] El login no recorta espacios: `  Ana` no coincide con `Ana`
+- [x] El login no recorta espacios: `  Ana` no coincide con `Ana`
   (RF-011).
-- [ ] Un login fallido devuelve 401 con el mismo mensaje exista o no el
+- [x] Un login fallido devuelve 401 con el mismo mensaje exista o no el
   usuario (RF-013).
-- [ ] El token caduca según la propiedad configurable (RF-012); token
+- [x] Toda cuenta nueva se crea con rol `USER`; el rol `ADMIN` se asigna en
+  la base de datos y el token lleva el rol correspondiente (RF-017).
+- [x] El token caduca según la propiedad configurable (RF-012); token
   caducado e inválido devuelven el mismo 401 (RF-015).
-- [ ] La validación de sesión devuelve id, username y email con token
+- [x] La validación de sesión devuelve id, username y email con token
   válido (RF-014).
-- [ ] Los RF se han verificado con tests automatizados en verde.
+- [ ] Los RF se han verificado con tests automatizados en verde. _RF-008
+  queda pendiente de verificación manual contra la BD._

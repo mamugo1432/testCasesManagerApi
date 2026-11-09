@@ -6,6 +6,7 @@ import es.test.manager.domain.exception.InvalidCredentialsException;
 import es.test.manager.domain.exception.InvalidEmailException;
 import es.test.manager.domain.exception.InvalidTokenException;
 import es.test.manager.domain.exception.InvalidUsernameException;
+import es.test.manager.domain.exception.ProjectLimitExceededException;
 import es.test.manager.domain.exception.ProjectNotFoundException;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -52,6 +53,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ProjectNotFoundException.class)
     public ResponseEntity<ApiError> handleProjectNotFound(ProjectNotFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(exception.getMessage()));
+    }
+
+    @ExceptionHandler(ProjectLimitExceededException.class)
+    public ResponseEntity<ApiError> handleProjectLimit(ProjectLimitExceededException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(exception.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

@@ -8,6 +8,8 @@ import es.test.manager.domain.exception.InvalidCredentialsException;
 import es.test.manager.domain.exception.InvalidEmailException;
 import es.test.manager.domain.exception.InvalidTokenException;
 import es.test.manager.domain.exception.InvalidUsernameException;
+import es.test.manager.domain.exception.ProjectLimitExceededException;
+import es.test.manager.domain.exception.ProjectNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +57,27 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message()).isEqualTo("Token inválido o caducado");
+        assertThat(response.getBody().fields()).isEmpty();
+    }
+
+    @Test
+    void projectNotFoundMapsTo404WithTheSameGenericMessage() {
+        ResponseEntity<ApiError> response = handler.handleProjectNotFound(new ProjectNotFoundException());
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Proyecto no encontrado");
+        assertThat(response.getBody().fields()).isEmpty();
+    }
+
+    @Test
+    void projectLimitExceededMapsTo409WithTheLimitMessage() {
+        ResponseEntity<ApiError> response = handler.handleProjectLimit(new ProjectLimitExceededException(10));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message())
+                .isEqualTo("No puedes crear más de 10 proyectos. Elimina uno para crear otro.");
         assertThat(response.getBody().fields()).isEmpty();
     }
 }

@@ -1,6 +1,8 @@
 package es.test.manager.infraestructure.adapter.in.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -8,11 +10,13 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import es.test.manager.application.dto.project.CreateProjectRequest;
 import es.test.manager.application.dto.project.ProjectResponse;
+import es.test.manager.domain.exception.ProjectLimitExceededException;
 import es.test.manager.domain.exception.ProjectNotFoundException;
 import es.test.manager.domain.model.AuthenticatedUser;
 import es.test.manager.domain.model.Role;
@@ -238,5 +242,88 @@ class ProjectControllerTest {
         mockMvc.perform(get("/api/projects/abc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Identificador no válido"));
+    }
+
+    @Test
+    void createReturns400WithFieldErrorsForABlankTitle() throws Exception {
+        authenticate();
+
+        mockMvc.perform(post("/api/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"   \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Datos de entrada inválidos"))
+                .andExpect(jsonPath("$.fields[0].field").value("title"));
+    }
+
+    @Test
+    void createReturns400ForMalformedJson() throws Exception {
+        authenticate();
+
+        mockMvc.perform(post("/api/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Cuerpo de la petición inválido"));
+    }
+
+    @Test
+    void createReturns415ForAnUnsupportedContentType() throws Exception {
+        authenticate();
+
+        mockMvc.perform(post("/api/projects")
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .content("title"))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.message").value("Tipo de contenido no soportado"));
+    }
+
+    @Test
+    void createReturns405ForAnUnsupportedMethod() throws Exception {
+        authenticate();
+
+        mockMvc.perform(patch("/api/projects").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.message").value("Método HTTP no soportado"));
+    }
+
+    @Test
+    void createReturns409WithTheLimitMessage() throws Exception {
+        authenticate();
+        given(createProjectUseCase.create(any(CreateProjectRequest.class), any(AuthenticatedUser.class)))
+                .willThrow(new ProjectLimitExceededException(10));
+
+        mockMvc.perform(post("/api/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Undécimo\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("No puedes crear más de 10 proyectos. Elimina uno para crear otro."));
+    }
+
+    @Test
+    void getReturns401WithoutAuthentication() throws Exception {
+        mockMvc.perform(get("/api/projects/4"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("No autenticado"));
+    }
+
+    @Test
+    void deleteReturns401WithoutAuthentication() throws Exception {
+        mockMvc.perform(delete("/api/projects/4"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("No autenticado"));
+    }
+
+    @Test
+    void unexpectedErrorsReturnA500WithoutInternals() throws Exception {
+        authenticate();
+        given(listProjectsUseCase.list(any(AuthenticatedUser.class)))
+                .willThrow(new RuntimeException("detalle interno"));
+
+        mockMvc.perform(get("/api/projects"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("Error interno del servidor"))
+                .andExpect(jsonPath("$.message").value(not(containsString("detalle interno"))));
     }
 }

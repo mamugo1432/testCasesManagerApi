@@ -3,9 +3,11 @@ package es.test.manager.application.service;
 import es.test.manager.application.dto.project.CreateProjectRequest;
 import es.test.manager.application.dto.project.ProjectResponse;
 import es.test.manager.domain.exception.ProjectLimitExceededException;
+import es.test.manager.domain.exception.ProjectNotFoundException;
 import es.test.manager.domain.model.AuthenticatedUser;
 import es.test.manager.domain.model.Project;
 import es.test.manager.domain.port.in.CreateProjectUseCase;
+import es.test.manager.domain.port.in.GetProjectUseCase;
 import es.test.manager.domain.port.in.ListProjectsUseCase;
 import es.test.manager.domain.port.out.ProjectLimitProvider;
 import es.test.manager.domain.port.out.ProjectRepository;
@@ -19,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** Application service implementing the project use cases. */
 @Service
 @RequiredArgsConstructor
-public class ProjectService implements CreateProjectUseCase, ListProjectsUseCase {
+public class ProjectService implements CreateProjectUseCase, ListProjectsUseCase, GetProjectUseCase {
 
     private static final DateTimeFormatter RESPONSE_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -54,6 +56,15 @@ public class ProjectService implements CreateProjectUseCase, ListProjectsUseCase
         return projectRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(user.getId()).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    /** RF-020, RF-021. A foreign project and a missing one produce the same exception. */
+    @Override
+    public ProjectResponse get(Long id, AuthenticatedUser user) {
+        return projectRepository
+                .findByIdAndUserId(id, user.getId())
+                .map(this::toResponse)
+                .orElseThrow(ProjectNotFoundException::new);
     }
 
     private ProjectResponse toResponse(Project project) {

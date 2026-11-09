@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import es.test.manager.application.dto.project.CreateProjectRequest;
 import es.test.manager.application.dto.project.ProjectResponse;
 import es.test.manager.domain.exception.ProjectLimitExceededException;
+import es.test.manager.domain.exception.ProjectNotFoundException;
 import es.test.manager.domain.model.AuthenticatedUser;
 import es.test.manager.domain.model.Project;
 import es.test.manager.domain.model.Role;
@@ -18,6 +19,7 @@ import es.test.manager.domain.port.out.ProjectLimitProvider;
 import es.test.manager.domain.port.out.ProjectRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -172,5 +174,35 @@ class ProjectServiceTest {
         projectService.list(USER);
 
         verify(projectRepository).findAllByUserIdOrderByCreatedAtDescIdDesc(7L);
+    }
+
+    @Test
+    void getReturnsAnOwnProject() {
+        Project project = project(4L, "Mío", LocalDateTime.of(2026, 11, 7, 9, 30));
+        given(projectRepository.findByIdAndUserId(4L, 7L)).willReturn(Optional.of(project));
+
+        ProjectResponse response = projectService.get(4L, USER);
+
+        assertThat(response.id()).isEqualTo(4L);
+        assertThat(response.title()).isEqualTo("Mío");
+        assertThat(response.createdAt()).isEqualTo("07/11/2026");
+    }
+
+    @Test
+    void getThrowsTheSameNotFoundForAMissingProject() {
+        given(projectRepository.findByIdAndUserId(99L, 7L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.get(99L, USER))
+                .isInstanceOf(ProjectNotFoundException.class)
+                .hasMessage("Proyecto no encontrado");
+    }
+
+    @Test
+    void getThrowsTheSameNotFoundForAProjectOwnedByAnotherUser() {
+        given(projectRepository.findByIdAndUserId(5L, 7L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.get(5L, USER))
+                .isInstanceOf(ProjectNotFoundException.class)
+                .hasMessage("Proyecto no encontrado");
     }
 }

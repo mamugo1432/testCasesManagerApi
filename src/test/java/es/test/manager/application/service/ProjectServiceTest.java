@@ -1,13 +1,16 @@
 package es.test.manager.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import es.test.manager.application.dto.project.CreateProjectRequest;
 import es.test.manager.application.dto.project.ProjectResponse;
+import es.test.manager.domain.exception.ProjectLimitExceededException;
 import es.test.manager.domain.model.AuthenticatedUser;
 import es.test.manager.domain.model.Project;
 import es.test.manager.domain.model.Role;
@@ -41,8 +44,14 @@ class ProjectServiceTest {
         projectService = new ProjectService(projectRepository, projectLimitProvider);
     }
 
+    private void allowCreation() {
+        given(projectLimitProvider.maxProjectsPerUser()).willReturn(10);
+        given(projectRepository.countByUserId(7L)).willReturn(0L);
+    }
+
     @Test
     void createStoresTheTitleExactlyAsReceivedAndTheOwnerFromThePrincipal() {
+        allowCreation();
         given(projectRepository.save(any(Project.class))).willAnswer(invocation -> {
             Project project = invocation.getArgument(0);
             project.setId(1L);
@@ -61,6 +70,7 @@ class ProjectServiceTest {
 
     @Test
     void createAcceptsRepeatedTitles() {
+        allowCreation();
         given(projectRepository.save(any(Project.class))).willAnswer(invocation -> {
             Project project = invocation.getArgument(0);
             project.setId(1L);
@@ -75,6 +85,7 @@ class ProjectServiceTest {
 
     @Test
     void createReturnsTheCreationDateAsDayMonthYear() {
+        allowCreation();
         given(projectRepository.save(any(Project.class))).willAnswer(invocation -> {
             Project project = invocation.getArgument(0);
             project.setId(3L);
@@ -85,5 +96,44 @@ class ProjectServiceTest {
         ProjectResponse response = projectService.create(new CreateProjectRequest("Proyecto"), USER);
 
         assertThat(response.createdAt()).isEqualTo("09/11/2026");
+    }
+
+    @Test
+    void createThrowsWhenTheLimitIsReachedAndDoesNotSave() {
+        given(projectLimitProvider.maxProjectsPerUser()).willReturn(10);
+        given(projectRepository.countByUserId(7L)).willReturn(10L);
+
+        assertThatThrownBy(() -> projectService.create(new CreateProjectRequest("Proyecto"), USER))
+                .isInstanceOf(ProjectLimitExceededException.class)
+                .hasMessage("No puedes crear más de 10 proyectos. Elimina uno para crear otro.");
+
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    void createAllowsTheTenthProjectWhenNineExist() {
+        given(projectLimitProvider.maxProjectsPerUser()).willReturn(10);
+        given(projectRepository.countByUserId(7L)).willReturn(9L);
+        given(projectRepository.save(any(Project.class))).willAnswer(invocation -> {
+            Project project = invocation.getArgument(0);
+            project.setId(10L);
+            return project;
+        });
+
+        ProjectResponse response = projectService.create(new CreateProjectRequest("Décimo"), USER);
+
+        assertThat(response.id()).isEqualTo(10L);
+        verify(projectRepository).save(any(Project.class));
+    }
+
+    @Test
+    void createRejectsAUserAlreadyAboveTheLimit() {
+        given(projectLimitProvider.maxProjectsPerUser()).willReturn(10);
+        given(projectRepository.countByUserId(7L)).willReturn(11L);
+
+        assertThatThrownBy(() -> projectService.create(new CreateProjectRequest("Proyecto"), USER))
+                .isInstanceOf(ProjectLimitExceededException.class);
+
+        verify(projectRepository, never()).save(any(Project.class));
     }
 }

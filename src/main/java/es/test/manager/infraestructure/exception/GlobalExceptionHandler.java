@@ -6,12 +6,14 @@ import es.test.manager.domain.exception.InvalidCredentialsException;
 import es.test.manager.domain.exception.InvalidEmailException;
 import es.test.manager.domain.exception.InvalidTokenException;
 import es.test.manager.domain.exception.InvalidUsernameException;
+import es.test.manager.domain.exception.ProjectNotFoundException;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /** Translates domain exceptions and validation errors into structured HTTP responses. */
 @RestControllerAdvice
@@ -45,5 +47,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<ApiError> handleInvalidToken(InvalidTokenException exception) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError(exception.getMessage()));
+    }
+
+    @ExceptionHandler(ProjectNotFoundException.class)
+    public ResponseEntity<ApiError> handleProjectNotFound(ProjectNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(exception.getMessage()));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
+        return ResponseEntity.badRequest().body(new ApiError("Identificador no válido"));
     }
 }

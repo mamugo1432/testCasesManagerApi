@@ -1,16 +1,19 @@
 package es.test.manager.infraestructure.adapter.in.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import es.test.manager.application.dto.project.CreateProjectRequest;
 import es.test.manager.application.dto.project.ProjectResponse;
+import es.test.manager.domain.exception.ProjectNotFoundException;
 import es.test.manager.domain.model.AuthenticatedUser;
 import es.test.manager.domain.model.Role;
 import es.test.manager.domain.port.in.CreateProjectUseCase;
@@ -53,6 +56,12 @@ class ProjectControllerTest {
     @Mock
     private ListProjectsUseCase listProjectsUseCase;
 
+    @Mock
+    private GetProjectUseCase getProjectUseCase;
+
+    @Mock
+    private DeleteProjectUseCase deleteProjectUseCase;
+
     private LocalValidatorFactoryBean validator;
     private MockMvc mockMvc;
 
@@ -60,7 +69,8 @@ class ProjectControllerTest {
     void setUp() {
         validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
-        ProjectController controller = new ProjectController(createProjectUseCase, listProjectsUseCase);
+        ProjectController controller =
+                new ProjectController(createProjectUseCase, listProjectsUseCase, getProjectUseCase, deleteProjectUseCase);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setValidator(validator)
@@ -127,8 +137,7 @@ class ProjectControllerTest {
 
         ArgumentCaptor<CreateProjectRequest> request = ArgumentCaptor.forClass(CreateProjectRequest.class);
         verify(createProjectUseCase).create(request.capture(), eq(USER));
-        org.assertj.core.api.Assertions.assertThat(request.getValue().title())
-                .isEqualTo("Mi proyecto");
+        assertThat(request.getValue().title()).isEqualTo("Mi proyecto");
     }
 
     @Test
@@ -173,5 +182,61 @@ class ProjectControllerTest {
         mockMvc.perform(get("/api/projects"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("No autenticado"));
+    }
+
+    @Test
+    void getReturns200WithTheProjectDetail() throws Exception {
+        authenticate();
+        given(getProjectUseCase.get(eq(4L), any(AuthenticatedUser.class)))
+                .willReturn(new ProjectResponse(4L, "Mío", "07/11/2026"));
+
+        mockMvc.perform(get("/api/projects/4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(4))
+                .andExpect(jsonPath("$.title").value("Mío"))
+                .andExpect(jsonPath("$.createdAt").value("07/11/2026"));
+    }
+
+    @Test
+    void getReturns404ForAMissingOrForeignProject() throws Exception {
+        authenticate();
+        given(getProjectUseCase.get(eq(99L), any(AuthenticatedUser.class)))
+                .willThrow(new ProjectNotFoundException());
+
+        mockMvc.perform(get("/api/projects/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Proyecto no encontrado"));
+    }
+
+    @Test
+    void deleteReturns204WithoutBody() throws Exception {
+        authenticate();
+
+        mockMvc.perform(delete("/api/projects/4"))
+                .andExpect(status().isNoContent())
+                .andExpect(jsonPath("$").doesNotExist());
+
+        verify(deleteProjectUseCase).delete(4L, USER);
+    }
+
+    @Test
+    void deleteReturns404ForAMissingOrForeignProject() throws Exception {
+        authenticate();
+        willThrow(new ProjectNotFoundException())
+                .given(deleteProjectUseCase)
+                .delete(eq(99L), any(AuthenticatedUser.class));
+
+        mockMvc.perform(delete("/api/projects/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Proyecto no encontrado"));
+    }
+
+    @Test
+    void getReturns400WhenTheIdIsNotNumeric() throws Exception {
+        authenticate();
+
+        mockMvc.perform(get("/api/projects/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Identificador no válido"));
     }
 }

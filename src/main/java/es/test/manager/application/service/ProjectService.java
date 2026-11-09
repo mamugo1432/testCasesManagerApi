@@ -76,9 +76,8 @@ public class ProjectService
     @Override
     @Transactional
     public void delete(Long id, AuthenticatedUser user) {
-        Project project = projectRepository
-                .findByIdAndUserId(id, user.getId())
-                .orElseThrow(ProjectNotFoundException::new);
+        Project project =
+                projectRepository.findByIdAndUserId(id, user.getId()).orElseThrow(ProjectNotFoundException::new);
         projectRepository.deleteById(project.getId());
     }
 

@@ -6,14 +6,14 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
 
 ## Fase 1 — Dominio
 
-- [ ] **T1. Modelo de dominio `Project`**
+- [x] **T1. Modelo de dominio `Project`**
   - Crea `domain/model/Project` con `id`, `userId`, `title` y `createdAt`
     (`LocalDateTime`), POJO con Lombok y sin anotaciones JPA.
   - RF: RF-005, RF-009
   - Hecho cuando: la clase compila sin imports de `infraestructure/` ni de
     JPA y conserva el título tal cual se le pasa.
 
-- [ ] **T2. Excepciones de dominio de proyectos**
+- [x] **T2. Excepciones de dominio de proyectos**
   - Crea `ProjectNotFoundException` (proyecto inexistente o ajeno) y
     `ProjectLimitExceededException` (límite alcanzado), ambas con mensaje en
     español.
@@ -21,14 +21,14 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
   - Hecho cuando: ambas existen en `domain/exception` y sus mensajes están en
     español; el mensaje del límite incluye el número de proyectos.
 
-- [ ] **T3. Puertos de entrada de proyectos**
+- [x] **T3. Puertos de entrada de proyectos**
   - Crea `CreateProjectUseCase`, `ListProjectsUseCase`, `GetProjectUseCase` y
     `DeleteProjectUseCase` con DTOs de aplicación como parámetros/retorno.
   - RF: RF-005, RF-016, RF-020, RF-022
   - Hecho cuando: las cuatro interfaces existen y solo referencian DTOs de
     `application/dto` o modelos de dominio.
 
-- [ ] **T4. Puertos de salida de proyectos**
+- [x] **T4. Puertos de salida de proyectos**
   - Crea `ProjectRepository` (guardar, buscar por `id + userId`, listar por
     usuario ordenado, contar por usuario y borrar) y `ProjectLimitProvider`
     (devolver el máximo por usuario).
@@ -39,7 +39,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
 
 ## Fase 2 — Aplicación
 
-- [ ] **T5. DTOs de proyecto con validaciones**
+- [x] **T5. DTOs de proyecto con validaciones**
   - Crea `CreateProjectRequest` (`title` con `@NotBlank` y
     `@Size(max = 255)`) y `ProjectResponse` (`id`, `title`, `createdAt`
     como `String`); no incluir `userId` ni permitir fijar `createdAt`.
@@ -48,7 +48,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
     nulo, vacío, solo espacios y 256 unidades UTF-16; acepta 255 unidades y
     127 emojis; conserva espacios exteriores.
 
-- [ ] **T6. `ProjectService` — creación**
+- [x] **T6. `ProjectService` — creación**
   - Implementa `CreateProjectUseCase`: toma el `userId` del principal, no
     recorta el título, asigna `createdAt` en el servidor, permite títulos
     repetidos y construye `ProjectResponse` con la fecha en `dd/MM/yyyy`.
@@ -57,7 +57,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
     título exacto, el `userId` sale del principal, dos títulos iguales se
     aceptan y `createdAt` se devuelve como `dd/MM/yyyy`.
 
-- [ ] **T7. `ProjectService` — límite de proyectos**
+- [x] **T7. `ProjectService` — límite de proyectos**
   - Antes de guardar, cuenta los proyectos del usuario y compara con
     `ProjectLimitProvider`; si ya alcanzó el límite, lanza
     `ProjectLimitExceededException` sin llamar a `save`. Documenta el
@@ -67,7 +67,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
     proyectos mockeados se lanza la excepción y no se guarda; con 9 se
     guarda el décimo; un usuario por encima del límite no puede crear.
 
-- [ ] **T8. `ProjectService` — listado**
+- [x] **T8. `ProjectService` — listado**
   - Implementa `ListProjectsUseCase` delegando en el puerto la lista ya
     filtrada por usuario y ordenada por `created_at DESC, id DESC`; devuelve
     lista vacía si no hay proyectos.
@@ -75,7 +75,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
   - Hecho cuando: `ProjectServiceTest` en verde: respeta el orden entregado,
     devuelve `[]` sin proyectos y no mezcla proyectos de otros usuarios.
 
-- [ ] **T9. `ProjectService` — detalle**
+- [x] **T9. `ProjectService` — detalle**
   - Implementa `GetProjectUseCase` buscando por `id + userId`; si no
     aparece, lanza la misma `ProjectNotFoundException` que para un proyecto
     inexistente.
@@ -84,7 +84,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
     devuelve y uno ajeno o inexistente lanza la misma excepción con el mismo
     mensaje.
 
-- [ ] **T10. `ProjectService` — borrado**
+- [x] **T10. `ProjectService` — borrado**
   - Implementa `DeleteProjectUseCase` comprobando propiedad por
     `id + userId` y borrando solo la fila del proyecto dentro de una
     transacción; la cascada la ejecuta la base de datos.
@@ -95,7 +95,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
 
 ## Fase 3 — Persistencia
 
-- [ ] **T11. Entidad y repositorio JPA de proyectos**
+- [x] **T11. Entidad y repositorio JPA de proyectos**
   - Crea `ProjectJpaEntity` mapeando `projects` (`id`, `user_id`, `title`,
     `created_at`) y `ProjectJpaRepository` con búsqueda por `id + userId`,
     listado ordenado, recuento y borrado.
@@ -104,7 +104,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
     negocio y el repositorio declara las consultas filtradas por usuario y
     ordenadas por `createdAt` e `id` descendente.
 
-- [ ] **T12. Mapper de proyectos**
+- [x] **T12. Mapper de proyectos**
   - Crea `ProjectMapper` con MapStruct para mapear `Project` ↔
     `ProjectJpaEntity`; no mapea DTOs ni formatea fechas.
   - RF: RF-003, RF-009
@@ -112,7 +112,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
     `title` y `createdAt` en ambos sentidos y compila sin dependencias de
     `application/`.
 
-- [ ] **T13. Adaptador de persistencia de proyectos**
+- [x] **T13. Adaptador de persistencia de proyectos**
   - Implementa `ProjectRepository` sobre `ProjectJpaRepository` y
     `ProjectMapper`, traduciendo entidad ↔ dominio.
   - RF: RF-003, RF-012, RF-016, RF-017, RF-022
@@ -121,7 +121,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
 
 ## Fase 4 — Configuración
 
-- [ ] **T14. Propiedad `app.projects.max-per-user`**
+- [x] **T14. Propiedad `app.projects.max-per-user`**
   - Crea `ProjectLimitProperties` en `infraestructure/config` con valor por
     defecto 10, validación de que sea mayor que 0 y la propiedad en
     `application.properties`.
@@ -129,7 +129,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
   - Hecho cuando: `ProjectLimitPropertiesTest` en verde: valor por defecto
     10, valor configurado distinto y valores 0 o negativos rechazados.
 
-- [ ] **T15. Adaptador del límite de proyectos**
+- [x] **T15. Adaptador del límite de proyectos**
   - Crea `ProjectLimitProviderAdapter`, que implementa `ProjectLimitProvider`
     devolviendo el valor de `ProjectLimitProperties`.
   - RF: RF-013
@@ -138,7 +138,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
 
 ## Fase 5 — Web
 
-- [ ] **T16. `ProjectController` — creación y listado**
+- [x] **T16. `ProjectController` — creación y listado**
   - Implementa `POST /api/projects` (201) y `GET /api/projects` (200) con
     `@Valid`, `@AuthenticationPrincipal` y el DTO de respuesta.
   - RF: RF-001, RF-002, RF-005, RF-011, RF-016
@@ -146,14 +146,14 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
     `{id, title, createdAt}`, 200 con la lista, 401 sin token y los campos
     desconocidos del cuerpo se ignoran.
 
-- [ ] **T17. `ProjectController` — detalle y borrado**
+- [x] **T17. `ProjectController` — detalle y borrado**
   - Implementa `GET /api/projects/{id}` (200) y
     `DELETE /api/projects/{id}` (204) con `id` de tipo `Long`.
   - RF: RF-020, RF-022, RF-029
   - Hecho cuando: `ProjectControllerTest` en verde: 200 con el detalle, 204
     sin cuerpo, 404 para inexistente o ajeno y 400 con un `id` no numérico.
 
-- [ ] **T18. Documentación OpenAPI de proyectos**
+- [x] **T18. Documentación OpenAPI de proyectos**
   - Anota el controlador con springdoc y el esquema bearer existente.
   - RF: RF-001 (soporte)
   - Hecho cuando: Swagger UI muestra los cuatro endpoints de proyectos con
@@ -161,7 +161,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
 
 ## Fase 6 — Errores
 
-- [ ] **T19. Handler de excepciones de proyectos**
+- [x] **T19. Handler de excepciones de proyectos**
   - Amplía `GlobalExceptionHandler`: `ProjectNotFoundException` → 404 con
     mensaje genérico y `ProjectLimitExceededException` → 409 con el mensaje
     del límite.
@@ -170,7 +170,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
     para inexistente y ajeno y el 409 incluye el mensaje «No puedes crear más
     de {límite} proyectos. Elimina uno para crear otro.».
 
-- [ ] **T20. Handler de errores de entrada y errores internos**
+- [x] **T20. Handler de errores de entrada y errores internos**
   - Añade al handler: validación → 400 con `fields`; tipo de `id` inválido →
     400; JSON malformado → 400; método no soportado → 405; `Content-Type` no
     soportado → 415; error no controlado → 500 genérico.
@@ -181,7 +181,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
 
 ## Fase 7 — Verificación
 
-- [ ] **T21. Suite de controlador completa**
+- [x] **T21. Suite de controlador completa**
   - Completa `ProjectControllerTest` con MockMvc para los cuatro endpoints,
     incluyendo 401 sin token, 404 de propiedad, 409 de límite y formato
     `dd/MM/yyyy`.
@@ -189,7 +189,7 @@ Convención: `[ ]` pendiente → `[x]` hecho y verificado.
   - Hecho cuando: la suite de controlador está en verde y cubre todos los
     códigos del contrato de la spec.
 
-- [ ] **T22. `mvn test` y criterios de la spec**
+- [x] **T22. `mvn test` y criterios de la spec**
   - Ejecuta la suite completa, aplica Spotless y repasa los criterios de
     finalización de `spec.md`.
   - RF: todos

@@ -75,8 +75,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiError> handleMethodNotSupported(HttpRequestMethodNotSupportedException exception) {
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(new ApiError("Método HTTP no soportado"));
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(new ApiError("Método HTTP no soportado"));
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
@@ -87,7 +86,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception exception) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiError("Error interno del servidor"));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiError("Error interno del servidor"));
     }
 }

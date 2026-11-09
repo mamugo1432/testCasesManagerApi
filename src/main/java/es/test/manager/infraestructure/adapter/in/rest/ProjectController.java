@@ -39,7 +39,9 @@ public class ProjectController {
     private final DeleteProjectUseCase deleteProjectUseCase;
 
     @PostMapping
-    @Operation(summary = "Crea un proyecto", description = "El propietario sale del JWT y solo se usa el título del cuerpo.")
+    @Operation(
+            summary = "Crea un proyecto",
+            description = "El propietario sale del JWT y solo se usa el título del cuerpo.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Proyecto creado"),
@@ -79,8 +81,7 @@ public class ProjectController {
         @ApiResponse(responseCode = "405", description = "Método no soportado"),
         @ApiResponse(responseCode = "500", description = "Error interno")
     })
-    public ResponseEntity<ProjectResponse> get(
-            @PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser user) {
+    public ResponseEntity<ProjectResponse> get(@PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.ok(getProjectUseCase.get(id, user));
     }
 
@@ -95,8 +96,7 @@ public class ProjectController {
         @ApiResponse(responseCode = "405", description = "Método no soportado"),
         @ApiResponse(responseCode = "500", description = "Error interno")
     })
-    public ResponseEntity<Void> delete(
-            @PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser user) {
+    public ResponseEntity<Void> delete(@PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser user) {
         deleteProjectUseCase.delete(id, user);
         return ResponseEntity.noContent().build();
     }

@@ -17,8 +17,7 @@ import org.junit.jupiter.api.Test;
 /** The adapter exposes the configured limit and the service consumes it through the port (RF-013). */
 class ProjectLimitProviderAdapterTest {
 
-    private static final AuthenticatedUser USER =
-            new AuthenticatedUser(7L, "ana", "ana@example.com", Role.USER);
+    private static final AuthenticatedUser USER = new AuthenticatedUser(7L, "ana", "ana@example.com", Role.USER);
 
     @Test
     void returnsTheConfiguredValue() {

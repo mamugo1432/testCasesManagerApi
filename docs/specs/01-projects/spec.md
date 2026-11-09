@@ -279,38 +279,42 @@ El 409 por límite de proyectos lleva el mensaje «No puedes crear más de
 
 ## Criterios de finalización
 
-- [ ] Los cuatro endpoints responden con los códigos y cuerpos definidos
+- [x] Los cuatro endpoints responden con los códigos y cuerpos definidos
   (RF-005, RF-016, RF-020, RF-022).
-- [ ] El propietario se obtiene del JWT y no de la URL ni del cuerpo
+- [x] El propietario se obtiene del JWT y no de la URL ni del cuerpo
   (RF-002).
-- [ ] Un usuario no puede ver ni borrar proyectos ajenos: 404, también
+- [x] Un usuario no puede ver ni borrar proyectos ajenos: 404, también
   para `ADMIN` (RF-003, RF-004, RF-021, RF-025).
-- [ ] El título es obligatorio, se guarda tal cual se recibe y admite como
+- [x] El título es obligatorio, se guarda tal cual se recibe y admite como
   máximo 255 caracteres; los errores son 400 estructurados (RF-006, RF-007,
   RF-008).
-- [ ] El listado solo contiene proyectos propios, ordenado por el
+- [x] El listado solo contiene proyectos propios, ordenado por el
   timestamp de creación descendente y `id` descendente, y devuelve `[]` si
   no hay (RF-016, RF-017, RF-018).
-- [ ] `createdAt` se devuelve como `dd/MM/yyyy` (RF-009).
-- [ ] El límite de 10 proyectos se aplica en el backend, es configurable y
+- [x] `createdAt` se devuelve como `dd/MM/yyyy` (RF-009).
+- [x] El límite de 10 proyectos se aplica en el backend, es configurable y
   responde 409 con el mensaje «No puedes crear más de 10 proyectos. Elimina
   uno para crear otro.» al alcanzarlo (RF-012, RF-013).
-- [ ] El límite se comprueba antes de crear y es best-effort: el caso de
+- [x] El límite se comprueba antes de crear y es best-effort: el caso de
   dos creaciones concurrentes que superan el límite está documentado y
   aceptado (RF-014).
-- [ ] Los proyectos existentes por encima del límite no se borran
+- [x] Los proyectos existentes por encima del límite no se borran
   automáticamente (RF-015).
 - [ ] El borrado elimina el proyecto y la base de datos elimina en cascada
   sus test cases, pasos y asociaciones, conserva las etiquetas globales, es
   transaccional y libera el hueco (RF-023, RF-024, RF-026, RF-027).
-- [ ] Token ausente, inválido o caducado: 401 (RF-001).
-- [ ] Todos los errores usan `ApiError`, sin stack traces (RF-028).
-- [ ] Un `id` de ruta no numérico devuelve 400 (RF-029).
-- [ ] `mvn test` en verde con tests unitarios de servicio y controlador,
+  _(pendiente: verificación manual en T23)_
+- [x] Token ausente, inválido o caducado: 401 (RF-001).
+- [x] Todos los errores usan `ApiError`, sin stack traces (RF-028).
+- [x] Un `id` de ruta no numérico devuelve 400 (RF-029).
+- [x] `mvn test` en verde con tests unitarios de servicio y controlador,
   incluido el test de límite con 10 proyectos mockeados.
 - [ ] Swagger muestra los cuatro endpoints con seguridad bearer.
+  _(pendiente: verificación visual en T24; anotaciones y esquema bearer
+  verificados por `ProjectControllerOpenApiTest`)_
 - [ ] Demo manual del flujo completo: crear → listar → detalle → borrar →
   intentar crear por encima del límite y recibir 409.
+  _(pendiente: verificación manual en T24)_
 
 ## Decisiones cerradas
 

@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import es.test.manager.application.dto.project.CreateProjectRequest;
 import es.test.manager.application.dto.project.ProjectResponse;
 import es.test.manager.domain.exception.ProjectLimitExceededException;
@@ -51,8 +52,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @ExtendWith(MockitoExtension.class)
 class ProjectControllerTest {
 
-    private static final AuthenticatedUser USER =
-            new AuthenticatedUser(7L, "ana", "ana@example.com", Role.USER);
+    private static final AuthenticatedUser USER = new AuthenticatedUser(7L, "ana", "ana@example.com", Role.USER);
 
     @Mock
     private CreateProjectUseCase createProjectUseCase;
@@ -73,8 +73,8 @@ class ProjectControllerTest {
     void setUp() {
         validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
-        ProjectController controller =
-                new ProjectController(createProjectUseCase, listProjectsUseCase, getProjectUseCase, deleteProjectUseCase);
+        ProjectController controller = new ProjectController(
+                createProjectUseCase, listProjectsUseCase, getProjectUseCase, deleteProjectUseCase);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setValidator(validator)
@@ -204,8 +204,7 @@ class ProjectControllerTest {
     @Test
     void getReturns404ForAMissingOrForeignProject() throws Exception {
         authenticate();
-        given(getProjectUseCase.get(eq(99L), any(AuthenticatedUser.class)))
-                .willThrow(new ProjectNotFoundException());
+        given(getProjectUseCase.get(eq(99L), any(AuthenticatedUser.class))).willThrow(new ProjectNotFoundException());
 
         mockMvc.perform(get("/api/projects/99"))
                 .andExpect(status().isNotFound())
@@ -271,9 +270,7 @@ class ProjectControllerTest {
     void createReturns415ForAnUnsupportedContentType() throws Exception {
         authenticate();
 
-        mockMvc.perform(post("/api/projects")
-                        .contentType(MediaType.TEXT_PLAIN)
-                        .content("title"))
+        mockMvc.perform(post("/api/projects").contentType(MediaType.TEXT_PLAIN).content("title"))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.message").value("Tipo de contenido no soportado"));
     }

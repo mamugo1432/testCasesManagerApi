@@ -31,8 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProjectServiceTest {
 
-    private static final AuthenticatedUser USER =
-            new AuthenticatedUser(7L, "ana", "ana@example.com", Role.USER);
+    private static final AuthenticatedUser USER = new AuthenticatedUser(7L, "ana", "ana@example.com", Role.USER);
 
     @Mock
     private ProjectRepository projectRepository;

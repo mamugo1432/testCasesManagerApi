@@ -103,8 +103,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message()).isEqualTo("Datos de entrada inválidos");
-        assertThat(response.getBody().fields())
-                .containsExactly(new FieldError("title", "El título es obligatorio"));
+        assertThat(response.getBody().fields()).containsExactly(new FieldError("title", "El título es obligatorio"));
     }
 
     @Test

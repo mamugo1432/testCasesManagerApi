@@ -12,12 +12,14 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /** Translates domain exceptions and validation errors into structured HTTP responses. */
 @RestControllerAdvice
@@ -82,6 +84,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException exception) {
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .body(new ApiError("Tipo de contenido no soportado"));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<ApiError> handleNotAcceptable(HttpMediaTypeNotAcceptableException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(new ApiError("Tipo de contenido no aceptable"));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> handleNoResource(NoResourceFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError("Recurso no encontrado"));
     }
 
     @ExceptionHandler(Exception.class)

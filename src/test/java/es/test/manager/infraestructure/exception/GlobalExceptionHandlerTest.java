@@ -12,16 +12,19 @@ import es.test.manager.domain.exception.ProjectLimitExceededException;
 import es.test.manager.domain.exception.ProjectNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /** Every domain exception produces the expected status and structured body, with no internals. */
 class GlobalExceptionHandlerTest {
@@ -155,6 +158,26 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().message()).isEqualTo("Error interno del servidor");
         assertThat(response.getBody().message()).doesNotContain("secreto");
         assertThat(response.getBody().fields()).isEmpty();
+    }
+
+    @Test
+    void unknownResourcesMapTo404InsteadOf500() {
+        ResponseEntity<ApiError> response = handler.handleNoResource(
+                new NoResourceFoundException(HttpMethod.GET, "api/projects/", "No static resource"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Recurso no encontrado");
+    }
+
+    @Test
+    void unacceptableResponsesMapTo406InsteadOf500() {
+        ResponseEntity<ApiError> response =
+                handler.handleNotAcceptable(new HttpMediaTypeNotAcceptableException("not acceptable"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_ACCEPTABLE);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Tipo de contenido no aceptable");
     }
 
     @SuppressWarnings("unused")

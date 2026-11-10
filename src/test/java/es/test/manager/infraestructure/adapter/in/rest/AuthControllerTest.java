@@ -12,6 +12,7 @@ import es.test.manager.application.dto.auth.AuthResponse;
 import es.test.manager.application.dto.auth.LoginRequest;
 import es.test.manager.application.dto.auth.RegisterRequest;
 import es.test.manager.application.dto.auth.UserResponse;
+import es.test.manager.application.mapper.UserDtoMapper;
 import es.test.manager.application.service.AuthService;
 import es.test.manager.domain.exception.InvalidCredentialsException;
 import es.test.manager.domain.exception.InvalidEmailException;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
@@ -205,7 +207,8 @@ class AuthControllerTest {
                 mock(UserRepository.class),
                 mock(PasswordEncoder.class),
                 mock(CredentialsAuthenticator.class),
-                tokenService);
+                tokenService,
+                Mappers.getMapper(UserDtoMapper.class));
         MockMvc tokenMockMvc = MockMvcBuilders.standaloneSetup(
                         new AuthController(registerUseCase, loginUseCase, authService))
                 .setControllerAdvice(new GlobalExceptionHandler())

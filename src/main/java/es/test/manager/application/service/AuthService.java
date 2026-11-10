@@ -4,6 +4,7 @@ import es.test.manager.application.dto.auth.AuthResponse;
 import es.test.manager.application.dto.auth.LoginRequest;
 import es.test.manager.application.dto.auth.RegisterRequest;
 import es.test.manager.application.dto.auth.UserResponse;
+import es.test.manager.application.mapper.UserDtoMapper;
 import es.test.manager.domain.exception.InvalidEmailException;
 import es.test.manager.domain.exception.InvalidUsernameException;
 import es.test.manager.domain.model.AuthenticatedUser;
@@ -30,6 +31,7 @@ public class AuthService implements RegisterUseCase, LoginUseCase, SessionUseCas
     private final PasswordEncoder passwordEncoder;
     private final CredentialsAuthenticator credentialsAuthenticator;
     private final TokenService tokenService;
+    private final UserDtoMapper userDtoMapper;
 
     /** RF-001, RF-002, RF-006, RF-007, RF-009. */
     @Override
@@ -51,7 +53,7 @@ public class AuthService implements RegisterUseCase, LoginUseCase, SessionUseCas
                 .build();
 
         User saved = userRepository.save(user);
-        return new UserResponse(saved.getId(), saved.getUsername(), saved.getEmail(), saved.getRole());
+        return userDtoMapper.toResponse(saved);
     }
 
     /** RF-010, RF-011, RF-013: credentials are checked by Spring Security's authentication chain. */
@@ -64,6 +66,6 @@ public class AuthService implements RegisterUseCase, LoginUseCase, SessionUseCas
     /** RF-014: the identity comes from the token claims, no database round trip. */
     @Override
     public UserResponse getCurrentUser(AuthenticatedUser user) {
-        return new UserResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole());
+        return userDtoMapper.toResponse(user);
     }
 }

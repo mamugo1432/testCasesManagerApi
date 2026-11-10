@@ -2,6 +2,7 @@ package es.test.manager.application.service;
 
 import es.test.manager.application.dto.project.CreateProjectRequest;
 import es.test.manager.application.dto.project.ProjectResponse;
+import es.test.manager.application.mapper.ProjectDtoMapper;
 import es.test.manager.domain.exception.ProjectLimitExceededException;
 import es.test.manager.domain.exception.ProjectNotFoundException;
 import es.test.manager.domain.model.AuthenticatedUser;
@@ -13,7 +14,6 @@ import es.test.manager.domain.port.in.ListProjectsUseCase;
 import es.test.manager.domain.port.out.ProjectLimitProvider;
 import es.test.manager.domain.port.out.ProjectRepository;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,10 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectService
         implements CreateProjectUseCase, ListProjectsUseCase, GetProjectUseCase, DeleteProjectUseCase {
 
-    private static final DateTimeFormatter RESPONSE_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
     private final ProjectRepository projectRepository;
     private final ProjectLimitProvider projectLimitProvider;
+    private final ProjectDtoMapper projectDtoMapper;
 
     /**
      * RF-002, RF-005, RF-006, RF-009, RF-010, RF-012, RF-013, RF-014. The limit check is
@@ -49,15 +48,13 @@ public class ProjectService
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        return toResponse(projectRepository.save(project));
+        return projectDtoMapper.toResponse(projectRepository.save(project));
     }
 
     /** RF-016, RF-017, RF-018, RF-019. The port already filters and orders. */
     @Override
     public List<ProjectResponse> list(AuthenticatedUser user) {
-        return projectRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(user.getId()).stream()
-                .map(this::toResponse)
-                .toList();
+        return projectDtoMapper.toResponses(projectRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(user.getId()));
     }
 
     /** RF-020, RF-021. A foreign project and a missing one produce the same exception. */
@@ -65,7 +62,7 @@ public class ProjectService
     public ProjectResponse get(Long id, AuthenticatedUser user) {
         return projectRepository
                 .findByIdAndUserId(id, user.getId())
-                .map(this::toResponse)
+                .map(projectDtoMapper::toResponse)
                 .orElseThrow(ProjectNotFoundException::new);
     }
 
@@ -79,10 +76,5 @@ public class ProjectService
         Project project =
                 projectRepository.findByIdAndUserId(id, user.getId()).orElseThrow(ProjectNotFoundException::new);
         projectRepository.deleteById(project.getId());
-    }
-
-    private ProjectResponse toResponse(Project project) {
-        return new ProjectResponse(
-                project.getId(), project.getTitle(), project.getCreatedAt().format(RESPONSE_DATE_FORMAT));
     }
 }

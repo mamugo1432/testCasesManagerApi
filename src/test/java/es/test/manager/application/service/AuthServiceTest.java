@@ -11,6 +11,7 @@ import es.test.manager.application.dto.auth.AuthResponse;
 import es.test.manager.application.dto.auth.LoginRequest;
 import es.test.manager.application.dto.auth.RegisterRequest;
 import es.test.manager.application.dto.auth.UserResponse;
+import es.test.manager.application.mapper.UserDtoMapper;
 import es.test.manager.domain.exception.InvalidCredentialsException;
 import es.test.manager.domain.exception.InvalidEmailException;
 import es.test.manager.domain.exception.InvalidUsernameException;
@@ -23,6 +24,7 @@ import es.test.manager.domain.port.out.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -50,7 +52,12 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, passwordEncoder, credentialsAuthenticator, tokenService);
+        authService = new AuthService(
+                userRepository,
+                passwordEncoder,
+                credentialsAuthenticator,
+                tokenService,
+                Mappers.getMapper(UserDtoMapper.class));
     }
 
     private static RegisterRequest registerRequest(String username) {

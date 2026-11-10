@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import es.test.manager.application.dto.project.CreateProjectRequest;
 import es.test.manager.application.dto.project.ProjectResponse;
+import es.test.manager.application.mapper.ProjectDtoMapper;
 import es.test.manager.domain.exception.ProjectLimitExceededException;
 import es.test.manager.domain.exception.ProjectNotFoundException;
 import es.test.manager.domain.model.AuthenticatedUser;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -43,7 +45,8 @@ class ProjectServiceTest {
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService(projectRepository, projectLimitProvider);
+        projectService =
+                new ProjectService(projectRepository, projectLimitProvider, Mappers.getMapper(ProjectDtoMapper.class));
     }
 
     private void allowCreation() {

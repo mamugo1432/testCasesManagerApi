@@ -19,6 +19,7 @@ import es.test.manager.domain.model.AuthenticatedUser;
 import es.test.manager.domain.model.Role;
 import es.test.manager.domain.model.User;
 import es.test.manager.domain.port.out.CredentialsAuthenticator;
+import es.test.manager.domain.port.out.CurrentUserProvider;
 import es.test.manager.domain.port.out.TokenService;
 import es.test.manager.domain.port.out.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +49,9 @@ class AuthServiceTest {
     @Mock
     private TokenService tokenService;
 
+    @Mock
+    private CurrentUserProvider currentUserProvider;
+
     private AuthService authService;
 
     @BeforeEach
@@ -57,6 +61,7 @@ class AuthServiceTest {
                 passwordEncoder,
                 credentialsAuthenticator,
                 tokenService,
+                currentUserProvider,
                 Mappers.getMapper(UserDtoMapper.class));
     }
 
@@ -163,7 +168,8 @@ class AuthServiceTest {
 
     @Test
     void getCurrentUserMapsTheTokenClaims() {
-        assertThat(authService.getCurrentUser(authenticatedUser()))
-                .isEqualTo(new UserResponse(5L, "ana", "ana@example.com", Role.USER));
+        when(currentUserProvider.getCurrentUser()).thenReturn(authenticatedUser());
+
+        assertThat(authService.getCurrentUser()).isEqualTo(new UserResponse(5L, "ana", "ana@example.com", Role.USER));
     }
 }

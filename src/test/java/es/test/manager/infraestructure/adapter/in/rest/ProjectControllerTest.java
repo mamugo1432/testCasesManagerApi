@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
@@ -42,7 +41,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -78,7 +76,6 @@ class ProjectControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setValidator(validator)
-                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .addFilters(requireAuthentication())
                 .build();
     }
@@ -115,7 +112,7 @@ class ProjectControllerTest {
     @Test
     void createReturns201WithTheCreatedProject() throws Exception {
         authenticate();
-        given(createProjectUseCase.create(any(CreateProjectRequest.class), any(AuthenticatedUser.class)))
+        given(createProjectUseCase.create(any(CreateProjectRequest.class)))
                 .willReturn(new ProjectResponse(1L, "Mi proyecto", "09/11/2026"));
 
         mockMvc.perform(post("/api/projects")
@@ -129,9 +126,9 @@ class ProjectControllerTest {
     }
 
     @Test
-    void createSendsTheTitleAndTheAuthenticatedUserToTheUseCase() throws Exception {
+    void createSendsOnlyTheTitleToTheUseCase() throws Exception {
         authenticate();
-        given(createProjectUseCase.create(any(CreateProjectRequest.class), any(AuthenticatedUser.class)))
+        given(createProjectUseCase.create(any(CreateProjectRequest.class)))
                 .willReturn(new ProjectResponse(1L, "Mi proyecto", "09/11/2026"));
 
         mockMvc.perform(post("/api/projects")
@@ -140,14 +137,14 @@ class ProjectControllerTest {
                 .andExpect(status().isCreated());
 
         ArgumentCaptor<CreateProjectRequest> request = ArgumentCaptor.forClass(CreateProjectRequest.class);
-        verify(createProjectUseCase).create(request.capture(), eq(USER));
+        verify(createProjectUseCase).create(request.capture());
         assertThat(request.getValue().title()).isEqualTo("Mi proyecto");
     }
 
     @Test
     void createIgnoresUnknownFieldsAndServerAssignedValues() throws Exception {
         authenticate();
-        given(createProjectUseCase.create(any(CreateProjectRequest.class), any(AuthenticatedUser.class)))
+        given(createProjectUseCase.create(any(CreateProjectRequest.class)))
                 .willReturn(new ProjectResponse(1L, "Mi proyecto", "09/11/2026"));
 
         mockMvc.perform(post("/api/projects")
@@ -168,7 +165,7 @@ class ProjectControllerTest {
     @Test
     void listReturns200WithTheProjects() throws Exception {
         authenticate();
-        given(listProjectsUseCase.list(any(AuthenticatedUser.class)))
+        given(listProjectsUseCase.list())
                 .willReturn(List.of(
                         new ProjectResponse(1L, "Primero", "09/11/2026"),
                         new ProjectResponse(2L, "Segundo", "08/11/2026")));
@@ -191,8 +188,7 @@ class ProjectControllerTest {
     @Test
     void getReturns200WithTheProjectDetail() throws Exception {
         authenticate();
-        given(getProjectUseCase.get(eq(4L), any(AuthenticatedUser.class)))
-                .willReturn(new ProjectResponse(4L, "Mío", "07/11/2026"));
+        given(getProjectUseCase.get(4L)).willReturn(new ProjectResponse(4L, "Mío", "07/11/2026"));
 
         mockMvc.perform(get("/api/projects/4"))
                 .andExpect(status().isOk())
@@ -202,9 +198,9 @@ class ProjectControllerTest {
     }
 
     @Test
-    void getReturns404ForAMissingOrForeignProject() throws Exception {
+    void getReturns404ForAMissingProject() throws Exception {
         authenticate();
-        given(getProjectUseCase.get(eq(99L), any(AuthenticatedUser.class))).willThrow(new ProjectNotFoundException());
+        given(getProjectUseCase.get(99L)).willThrow(new ProjectNotFoundException());
 
         mockMvc.perform(get("/api/projects/99"))
                 .andExpect(status().isNotFound())
@@ -219,15 +215,13 @@ class ProjectControllerTest {
                 .andExpect(status().isNoContent())
                 .andExpect(jsonPath("$").doesNotExist());
 
-        verify(deleteProjectUseCase).delete(4L, USER);
+        verify(deleteProjectUseCase).delete(4L);
     }
 
     @Test
-    void deleteReturns404ForAMissingOrForeignProject() throws Exception {
+    void deleteReturns404ForAMissingProject() throws Exception {
         authenticate();
-        willThrow(new ProjectNotFoundException())
-                .given(deleteProjectUseCase)
-                .delete(eq(99L), any(AuthenticatedUser.class));
+        willThrow(new ProjectNotFoundException()).given(deleteProjectUseCase).delete(99L);
 
         mockMvc.perform(delete("/api/projects/99"))
                 .andExpect(status().isNotFound())
@@ -287,7 +281,7 @@ class ProjectControllerTest {
     @Test
     void createReturns409WithTheLimitMessage() throws Exception {
         authenticate();
-        given(createProjectUseCase.create(any(CreateProjectRequest.class), any(AuthenticatedUser.class)))
+        given(createProjectUseCase.create(any(CreateProjectRequest.class)))
                 .willThrow(new ProjectLimitExceededException(10));
 
         mockMvc.perform(post("/api/projects")
@@ -315,8 +309,7 @@ class ProjectControllerTest {
     @Test
     void unexpectedErrorsReturnA500WithoutInternals() throws Exception {
         authenticate();
-        given(listProjectsUseCase.list(any(AuthenticatedUser.class)))
-                .willThrow(new RuntimeException("detalle interno"));
+        given(listProjectsUseCase.list()).willThrow(new RuntimeException("detalle interno"));
 
         mockMvc.perform(get("/api/projects"))
                 .andExpect(status().isInternalServerError())

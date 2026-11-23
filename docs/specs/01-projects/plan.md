@@ -24,7 +24,7 @@ resolverán durante la implementación.
 | D13 | Creación y borrado son transaccionales; el recuento y la inserción comparten transacción, y el borrado con la cascada también | Sin transacción o con varias llamadas independientes | La creación debe ser consistente con el límite y el borrado no puede dejar datos a medias; la cascada de BD participa en la misma transacción | RF-012, RF-014, RF-026, RF-027 |
 | D14 | El límite se configura en `app.projects.max-per-user` (10 por defecto) mediante `ProjectLimitProperties` en infraestructura, expuesto a la aplicación por el puerto `ProjectLimitProvider` | Constante en código, valor leído ad hoc en el servicio o inyectar la clase de configuración de infraestructura directamente en `ProjectService` | RF-013 exige ajustarlo sin cambiar código; el puerto mantiene la regla hexagonal de que `application/` no importe `infraestructure/` y permite mockear el límite en los tests | RF-013, RF-015 |
 | D15 | Tests unitarios con JUnit 5 + Mockito y tests de controlador con MockMvc; la cascada real se verifica manualmente contra MySQL | Tests de integración con Testcontainers o H2 | Decisión del proyecto: no se añaden dependencias ni se levanta BD en los tests; el esquema y las FK se validan con el script y una prueba manual | Todos; RF-023, RF-024, RF-026 manuales |
-| D16 | Se reutiliza la seguridad JWT existente: `SecurityConfig` protege todo salvo los endpoints públicos y el controlador recibe el `AuthenticatedUser` | Crear una configuración de seguridad específica para proyectos | La cadena actual ya deja `/api/projects/**` autenticado y el principal contiene `id`, `username`, `email` y `role`; no hace falta duplicar reglas | RF-001, RF-002 |
+| D16 | Se reutiliza la seguridad JWT existente: `SecurityConfig` protege todo salvo los endpoints públicos y las consultas se filtran por el usuario del JWT | Crear una configuración de seguridad específica para proyectos | La cadena actual ya deja `/api/projects/**` autenticado y el principal contiene `id`, `username`, `email` y `role`; la aplicación lo obtiene con el puerto `CurrentUserProvider`, sin `@AuthenticationPrincipal` | RF-001, RF-002, RF-003 |
 | D17 | Documentación con springdoc en el controlador y el esquema bearer ya existente | Omitir Swagger o documentar solo con anotaciones sueltas | Convención del proyecto y criterio de finalización de la spec | RF-001 (soporte) |
 
 ## Modelo de datos
@@ -106,7 +106,7 @@ borrado ya está en las FK de `test_cases`, `test_steps` y
 
 | Módulo | Responsabilidad | RF |
 |---|---|---|
-| `adapter/in/rest/ProjectController` | `POST /api/projects` (201), `GET /api/projects` (200), `GET /api/projects/{id}` (200), `DELETE /api/projects/{id}` (204); `@Valid` y `@AuthenticationPrincipal` | RF-001, RF-002, RF-005, RF-016, RF-020, RF-022 |
+| `adapter/in/rest/ProjectController` | `POST /api/projects` (201), `GET /api/projects` (200), `GET /api/projects/{id}` (200), `DELETE /api/projects/{id}` (204); `@Valid`; el usuario actual se obtiene con `CurrentUserProvider` | RF-001, RF-002, RF-005, RF-016, RF-020, RF-022 |
 | `adapter/out/persistence/ProjectJpaEntity` | Mapea la tabla `projects` (`id`, `user_id`, `title`, `created_at`); sin lógica de negocio | RF-003, RF-009 |
 | `adapter/out/persistence/ProjectJpaRepository` | Spring Data: búsqueda por `id + userId`, listado ordenado, recuento y borrado | RF-003, RF-012, RF-016, RF-017, RF-022 |
 | `adapter/out/persistence/ProjectRepositoryAdapter` | Implementa `ProjectRepository` y traduce entre entidad y dominio | RF-003, RF-012, RF-016, RF-017, RF-022 |
@@ -172,7 +172,7 @@ comportamiento de MySQL se verifican manualmente.
 | RF | Dónde se cubre |
 |---|---|
 | RF-001 | `SecurityConfig` existente + `ProjectControllerTest` (401) |
-| RF-002 | `ProjectController` (`@AuthenticationPrincipal`) + `ProjectServiceTest` |
+| RF-002 | `SecurityContextCurrentUserProvider` + `ProjectServiceTest` |
 | RF-003 | `ProjectRepository` y adaptador (consultas por `id + userId`) + tests de servicio |
 | RF-004 | `ProjectNotFoundException` + tests de servicio/controlador/handler |
 | RF-005 | `ProjectService` + `ProjectController` + tests |

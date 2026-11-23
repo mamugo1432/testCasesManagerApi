@@ -2,6 +2,7 @@ package es.test.manager.infraestructure.config;
 
 import es.test.manager.application.dto.error.ApiError;
 import es.test.manager.domain.port.out.TokenService;
+import es.test.manager.infraestructure.security.JwtAuthenticationEntryPoint;
 import es.test.manager.infraestructure.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -20,12 +21,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import tools.jackson.databind.ObjectMapper;
 
-/** Stateless security: public register/login, JWT authentication for everything else. */
+/** Stateless security: public register/login, role-based access for everything else. */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -35,8 +36,11 @@ public class SecurityConfig {
         "/api/auth/register", "/api/auth/login", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/error"
     };
 
+    private static final String[] AUTHENTICATED_ENDPOINTS = {"/api/auth/me", "/api/projects", "/api/projects/**"};
+
     private final TokenService tokenService;
     private final ObjectMapper objectMapper;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -55,15 +59,24 @@ public class SecurityConfig {
         return new ProviderManager(provider);
     }
 
+    /** Returns 403 with the shared error body when an authenticated user lacks the required role. */
+    @Bean
+    public AccessDeniedHandler accessDeniedHandler() {
+        return (request, response, exception) -> writeForbidden(response);
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests.requestMatchers(PUBLIC_ENDPOINTS)
                         .permitAll()
+                        .requestMatchers(AUTHENTICATED_ENDPOINTS)
+                        .hasAnyRole("USER", "ADMIN")
                         .anyRequest()
-                        .authenticated())
-                .exceptionHandling(handling -> handling.authenticationEntryPoint(restAuthenticationEntryPoint()))
+                        .denyAll())
+                .exceptionHandling(handling -> handling.authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler()))
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .addFilterBefore(new JwtAuthenticationFilter(tokenService), UsernamePasswordAuthenticationFilter.class);
@@ -71,14 +84,11 @@ public class SecurityConfig {
         return http.build();
     }
 
-    private AuthenticationEntryPoint restAuthenticationEntryPoint() {
-        return (request, response, exception) -> writeUnauthorized(response);
-    }
-
-    private void writeUnauthorized(HttpServletResponse response) throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    private void writeForbidden(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(response.getOutputStream(), new ApiError("No autenticado"));
+        objectMapper.writeValue(
+                response.getOutputStream(), new ApiError("No tienes permisos para acceder a este recurso"));
     }
 }

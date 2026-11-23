@@ -37,8 +37,11 @@ se concretarán en las especificaciones técnicas.
 La aplicación incluirá registro e inicio de sesión. Cada usuario tendrá
 sus propios proyectos y solo podrá consultar, crear, modificar o
 eliminar proyectos de su propiedad y los test cases pertenecientes a
-ellos. La implementación del mecanismo de autenticación y los campos
-definitivos de usuario se concretarán en las especificaciones técnicas.
+ellos. La autorización por rol (`USER`/`ADMIN`) se centraliza en la
+cadena de seguridad y cada operación verifica además la propiedad del
+recurso: un recurso ajeno responde 404. La implementación del mecanismo
+de autenticación y los campos definitivos de usuario se concretarán en
+las especificaciones técnicas.
 
 ### 3.2. Gestión de proyectos
 
@@ -60,8 +63,8 @@ crear más de 10 proyectos. Elimina uno para crear otro.», para que el
 frontend muestre el aviso y ofrezca borrar un proyecto. El usuario deberá
 eliminar uno antes de crear otro. El límite se aplica a todos los roles,
 incluido `ADMIN`, y no elimina automáticamente los proyectos existentes
-si se reduce por configuración. El listado no está paginado; por eso se
-fija este límite.
+si se reduce por configuración. El listado de proyectos no está paginado;
+por eso se fija este límite.
 
 **Regla al eliminar:** la interfaz pedirá confirmación antes de eliminar
 un proyecto. Al confirmar, también se eliminarán los test cases que
@@ -76,7 +79,7 @@ Cada proyecto tendrá sus propios casos de prueba. Dentro de un proyecto,
 el usuario podrá:
 
 -   Crear un test case.
--   Consultar el listado de test cases.
+-   Consultar el listado de test cases, paginado de 15 en 15.
 -   Abrir un test case para ver su detalle.
 -   Editar un test case existente.
 -   Eliminar un test case, previa confirmación en la interfaz.
@@ -90,11 +93,11 @@ etiquetas/categorías, que usarán `VARCHAR(50)`.
   ----------------------------------- -----------------------------------
   Título                              Nombre breve que identifique la
                                       prueba. Obligatorio, máximo 255
-                                      caracteres.
+                                      unidades UTF-16.
 
   Descripción                         Explicación de qué se quiere
                                       comprobar. Opcional, máximo 255
-                                      caracteres.
+                                      unidades UTF-16.
 
   Pasos                               Secuencia ordenada de acciones que
                                       deben realizarse para ejecutar la
@@ -103,7 +106,7 @@ etiquetas/categorías, que usarán `VARCHAR(50)`.
   Resultado esperado                  Comportamiento o resultado que se
                                       espera obtener al ejecutar los
                                       pasos. Opcional, máximo 255
-                                      caracteres.
+                                      unidades UTF-16.
 
   Prioridad                           Nivel de importancia asignado al
                                       test case. Obligatoria: alta, media
@@ -113,7 +116,7 @@ etiquetas/categorías, que usarán `VARCHAR(50)`.
                                       clasificar la prueba, por ejemplo,
                                       `backend`, `frontend` o
                                       `funcional`. Cada nombre tendrá un
-                                      máximo de 50 caracteres.
+                                      máximo de 50 unidades UTF-16.
 
   Estado                              Estado de progreso del test case:
                                       `IN_PROGRESS` o `COMPLETED`. Será
@@ -129,10 +132,10 @@ El sistema asociará cada test case al proyecto en el que se haya creado.
 #### Pasos de ejecución
 
 Los pasos se guardarán como elementos ordenados vinculados al test case.
-Cada paso tendrá una instrucción de hasta 255 caracteres y una posición
-dentro de la secuencia. Al consultar o editar el test case, los pasos
-deberán mostrarse en el orden correcto. El usuario podrá añadir, editar,
-eliminar y reordenar pasos.
+Cada paso tendrá una instrucción de hasta 255 unidades UTF-16 y una
+posición dentro de la secuencia. Al consultar o editar el test case, los
+pasos deberán mostrarse en el orden correcto. El usuario podrá añadir,
+editar, eliminar y reordenar pasos.
 
 ### 3.4. Estado de los test cases
 
@@ -174,7 +177,8 @@ de guardarlo o buscar una etiqueta existente:
 
 1.  Eliminar los espacios iniciales y finales.
 2.  Convertir el texto a minúsculas.
-3.  Eliminar las tildes y marcas diacríticas.
+3.  Eliminar las tildes y marcas diacríticas, salvo la tilde de la `ñ`,
+    que se conserva por ser una letra propia del español.
 4.  Buscar una etiqueta con el mismo nombre normalizado.
 5.  Reutilizar la etiqueta existente si ya existe; crearla solo si no
     existe ninguna equivalente.
@@ -183,10 +187,11 @@ Por ejemplo, `Regresión`, `REGRESIÓN`, `regresion` y ` regresion ` deben
 resolverse como la misma etiqueta.
 
 El nombre visible y el nombre normalizado de cada etiqueta tendrán un
-máximo de 50 caracteres. Se recomienda guardar tanto el nombre de la
+máximo de 50 unidades UTF-16. Se recomienda guardar tanto el nombre de la
 etiqueta como su nombre normalizado. La base de datos deberá garantizar
 que el nombre normalizado sea único para evitar duplicados, incluso si
-dos solicitudes intentan crear la misma etiqueta al mismo tiempo.
+dos solicitudes intentan crear la misma etiqueta al mismo tiempo: una
+inserta la etiqueta y la otra recibe un conflicto.
 
 La eliminación de un test case o de un proyecto eliminará sus
 asociaciones con etiquetas, pero no borrará las etiquetas globales. La
@@ -368,8 +373,8 @@ Será responsable de:
 Las validaciones del frontend no sustituyen a las validaciones del
 backend. Los títulos de proyecto y test case, las descripciones, los
 resultados esperados y las instrucciones de los pasos tendrán un máximo
-de 255 caracteres. Los nombres de etiquetas tendrán un máximo de 50
-caracteres.
+de 255 unidades UTF-16. Los nombres de etiquetas tendrán un máximo de 50
+unidades UTF-16.
 
 ### Backend --- Java + Spring Boot
 
@@ -419,8 +424,8 @@ funcionalidades, por ejemplo:
 ## 7. Criterios de aceptación generales
 
 -   Un usuario puede registrarse e iniciar sesión.
--   Cada usuario solo puede acceder a sus propios proyectos y a los test
-    cases de estos.
+-   Cada usuario autenticado con rol `USER` o `ADMIN` solo puede acceder a
+    sus propios proyectos y a los test cases asociados.
 -   Se puede crear un proyecto indicando un título y verlo en el
     listado.
 -   Un usuario no puede crear más de 10 proyectos; al intentar el
@@ -433,12 +438,13 @@ funcionalidades, por ejemplo:
 -   Los pasos se pueden añadir, editar, eliminar y reordenar.
 -   Un test case solo puede pasar a `COMPLETED` si tiene al menos un
     paso y un resultado esperado no vacío.
--   Los campos de texto generales admiten hasta 255 caracteres y las
-    etiquetas hasta 50 caracteres.
+-   Los campos de texto generales admiten hasta 255 unidades UTF-16 y las
+    etiquetas hasta 50 unidades UTF-16.
 -   Cada test case solo puede tener uno de los dos estados permitidos.
 -   Se pueden asignar varias etiquetas a un test case.
 -   Variantes de una etiqueta que solo cambian en mayúsculas, espacios
-    exteriores o tildes se reutilizan como una misma etiqueta.
+    exteriores o tildes se reutilizan como una misma etiqueta, salvo la
+    tilde de la `ñ`, que se conserva.
 -   El borrado de un proyecto no deja test cases huérfanos y no elimina
     las etiquetas globales.
 -   Los indicadores circulares reflejan el progreso general, la
@@ -467,7 +473,7 @@ No se consideran requisitos acordados, por ahora:
 -   Importación o exportación de test cases.
 -   Gestión independiente de etiquetas globales (por ejemplo, una
     pantalla para renombrarlas o eliminarlas).
--   Filtros avanzados, búsqueda, paginación o notificaciones.
+-   Filtros avanzados, búsqueda, orden configurable o notificaciones.
 -   Despliegue. La base de datos elegida será MySQL.
 
 Estos puntos podrían añadirse en futuras versiones si se consideran

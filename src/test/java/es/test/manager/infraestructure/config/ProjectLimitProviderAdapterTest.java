@@ -11,6 +11,7 @@ import es.test.manager.application.service.ProjectService;
 import es.test.manager.domain.exception.ProjectLimitExceededException;
 import es.test.manager.domain.model.AuthenticatedUser;
 import es.test.manager.domain.model.Role;
+import es.test.manager.domain.port.out.CurrentUserProvider;
 import es.test.manager.domain.port.out.ProjectLimitProvider;
 import es.test.manager.domain.port.out.ProjectRepository;
 import org.junit.jupiter.api.Test;
@@ -36,11 +37,16 @@ class ProjectLimitProviderAdapterTest {
         ProjectLimitProperties properties = new ProjectLimitProperties();
         properties.setMaxPerUser(1);
         ProjectRepository repository = mock(ProjectRepository.class);
+        CurrentUserProvider currentUserProvider = mock(CurrentUserProvider.class);
+        given(currentUserProvider.getCurrentUser()).willReturn(USER);
         given(repository.countByUserId(7L)).willReturn(1L);
         ProjectService service = new ProjectService(
-                repository, new ProjectLimitProviderAdapter(properties), Mappers.getMapper(ProjectDtoMapper.class));
+                repository,
+                new ProjectLimitProviderAdapter(properties),
+                currentUserProvider,
+                Mappers.getMapper(ProjectDtoMapper.class));
 
-        assertThatThrownBy(() -> service.create(new CreateProjectRequest("Proyecto"), USER))
+        assertThatThrownBy(() -> service.create(new CreateProjectRequest("Proyecto")))
                 .isInstanceOf(ProjectLimitExceededException.class);
     }
 }

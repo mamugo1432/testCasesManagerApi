@@ -52,10 +52,10 @@ con 10 por defecto y no elimina automáticamente proyectos ya existentes.
 
 | Método | Ruta | Autenticación | Cuerpo | Respuesta correcta | Errores |
 |---|---|---|---|---|---|
-| POST | `/api/projects` | Bearer JWT | `{ "title": "..." }` | 201 `{id, title, createdAt}` | 400, 401, 405, 409, 415, 500 |
-| GET | `/api/projects` | Bearer JWT | — | 200 `[{id, title, createdAt}]` | 401, 405, 500 |
-| GET | `/api/projects/{id}` | Bearer JWT | — | 200 `{id, title, createdAt}` | 400, 401, 404, 405, 500 |
-| DELETE | `/api/projects/{id}` | Bearer JWT | — | 204 sin cuerpo | 400, 401, 404, 405, 500 |
+| POST | `/api/projects` | Bearer JWT (`USER`/`ADMIN`) | `{ "title": "..." }` | 201 `{id, title, createdAt}` | 400, 401, 403, 405, 409, 415, 500 |
+| GET | `/api/projects` | Bearer JWT (`USER`/`ADMIN`) | — | 200 `[{id, title, createdAt}]` | 401, 403, 405, 500 |
+| GET | `/api/projects/{id}` | Bearer JWT (`USER`/`ADMIN`) | — | 200 `{id, title, createdAt}` | 400, 401, 403, 404, 405, 500 |
+| DELETE | `/api/projects/{id}` | Bearer JWT (`USER`/`ADMIN`) | — | 204 sin cuerpo | 400, 401, 403, 404, 405, 500 |
 
 El campo `createdAt` se devuelve con formato `dd/MM/yyyy` en la zona
 horaria del servidor. El campo `user_id` no se expone en ninguna respuesta.
@@ -71,7 +71,9 @@ El 409 por límite de proyectos lleva el mensaje «No puedes crear más de
   seguridad (claims del JWT), nunca de la URL ni del cuerpo de la petición.
 - **RF-003** — EL SISTEMA solo devolverá y modificará proyectos cuyo
   `user_id` coincida con el usuario autenticado. La regla se aplica también
-  a los usuarios con rol `ADMIN`.
+  a los usuarios con rol `ADMIN`. Además, los endpoints exigen un rol
+  `USER` o `ADMIN` en `SecurityFilterChain`; un rol no autorizado recibe
+  403.
 - **RF-004** — SI el proyecto solicitado no existe o pertenece a otro
   usuario, ENTONCES responderá 404 con un mensaje genérico idéntico en
   ambos casos, sin revelar si el proyecto existe.
@@ -184,8 +186,10 @@ El 409 por límite de proyectos lleva el mensaje «No puedes crear más de
 
 ## Requisitos no funcionales
 
-- **Seguridad**: API stateless con JWT; la propiedad se comprueba en cada
-  operación; se responde 404, nunca 403; no se expone `user_id`.
+- **Seguridad**: API stateless con JWT; la autorización por rol se centraliza
+  en `SecurityFilterChain` y toda operación verifica la propiedad del usuario
+  autenticado; se responde 404, nunca 403, si el recurso no existe o es
+  ajeno; no se expone `user_id`.
 - **Consistencia**: el borrado se apoya en las claves foráneas con
   `ON DELETE CASCADE` del esquema y se ejecuta en una transacción; no se
   dejan test cases, pasos ni asociaciones huérfanas. El límite de
@@ -275,7 +279,8 @@ El 409 por límite de proyectos lleva el mensaje «No puedes crear más de
   configuración.
 - Auditoría o historial de cambios.
 - Endpoints de administración de proyectos.
-- Gestión de test cases, etiquetas y estadísticas (specs 02, 03 y 04).
+- Gestión de test cases, incluidas sus etiquetas, y estadísticas (specs 02
+  y 04).
 
 ## Criterios de finalización
 

@@ -24,11 +24,11 @@ import es.test.manager.domain.port.in.RegisterUseCase;
 import es.test.manager.domain.port.in.SessionUseCase;
 import es.test.manager.domain.port.out.CredentialsAuthenticator;
 import es.test.manager.domain.port.out.UserRepository;
+import es.test.manager.infraestructure.adapter.out.security.SecurityContextCurrentUserProvider;
 import es.test.manager.infraestructure.exception.GlobalExceptionHandler;
 import es.test.manager.infraestructure.security.JwtAuthenticationFilter;
 import es.test.manager.infraestructure.security.JwtTokenService;
 import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,11 +38,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -92,7 +89,6 @@ class AuthControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setValidator(validator)
-                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();
     }
 
@@ -185,12 +181,7 @@ class AuthControllerTest {
 
     @Test
     void meReturnsTheAuthenticatedUser() throws Exception {
-        AuthenticatedUser principal = new AuthenticatedUser(5L, "ana", "ana@example.com", Role.USER);
-        SecurityContextHolder.getContext()
-                .setAuthentication(new UsernamePasswordAuthenticationToken(
-                        principal, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
-        given(sessionUseCase.getCurrentUser(any(AuthenticatedUser.class)))
-                .willReturn(new UserResponse(5L, "ana", "ana@example.com", Role.USER));
+        given(sessionUseCase.getCurrentUser()).willReturn(new UserResponse(5L, "ana", "ana@example.com", Role.USER));
 
         mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isOk())
@@ -208,12 +199,12 @@ class AuthControllerTest {
                 mock(PasswordEncoder.class),
                 mock(CredentialsAuthenticator.class),
                 tokenService,
+                new SecurityContextCurrentUserProvider(),
                 Mappers.getMapper(UserDtoMapper.class));
         MockMvc tokenMockMvc = MockMvcBuilders.standaloneSetup(
                         new AuthController(registerUseCase, loginUseCase, authService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setValidator(validator)
-                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .addFilters(new JwtAuthenticationFilter(tokenService))
                 .build();
         String token = tokenService.generateToken(new AuthenticatedUser(5L, "ana", "ana@example.com", Role.USER));

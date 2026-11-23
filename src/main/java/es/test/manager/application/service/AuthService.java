@@ -14,6 +14,7 @@ import es.test.manager.domain.port.in.LoginUseCase;
 import es.test.manager.domain.port.in.RegisterUseCase;
 import es.test.manager.domain.port.in.SessionUseCase;
 import es.test.manager.domain.port.out.CredentialsAuthenticator;
+import es.test.manager.domain.port.out.CurrentUserProvider;
 import es.test.manager.domain.port.out.TokenService;
 import es.test.manager.domain.port.out.UserRepository;
 import java.time.LocalDateTime;
@@ -31,6 +32,7 @@ public class AuthService implements RegisterUseCase, LoginUseCase, SessionUseCas
     private final PasswordEncoder passwordEncoder;
     private final CredentialsAuthenticator credentialsAuthenticator;
     private final TokenService tokenService;
+    private final CurrentUserProvider currentUserProvider;
     private final UserDtoMapper userDtoMapper;
 
     /** RF-001, RF-002, RF-006, RF-007, RF-009. */
@@ -65,7 +67,7 @@ public class AuthService implements RegisterUseCase, LoginUseCase, SessionUseCas
 
     /** RF-014: the identity comes from the token claims, no database round trip. */
     @Override
-    public UserResponse getCurrentUser(AuthenticatedUser user) {
-        return userDtoMapper.toResponse(user);
+    public UserResponse getCurrentUser() {
+        return userDtoMapper.toResponse(currentUserProvider.getCurrentUser());
     }
 }

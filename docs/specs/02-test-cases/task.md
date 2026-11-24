@@ -55,7 +55,7 @@ Lombok, JUnit 5, Mockito, MockMvc, springdoc.
   - Depende de: T1.1, T1.2.
   - Hecho cuando: `TestCase` expone `id`, `projectId`, `title`, `description`, `expectedResult`, `priority`, `status`, `createdAt`, `steps` y `tags`, inicializa las listas vacías y compila.
 
-- [ ] **T1.4 — Crear los puertos de entrada** (~10 min)
+- [x] **T1.4 — Crear los puertos de entrada** (~10 min)
   - RF: RF-007 a RF-048.
   - Depende de: T1.3.
   - Hecho cuando: existen `CreateTestCaseUseCase`, `ListTestCasesUseCase`, `GetTestCaseUseCase`, `UpdateTestCaseUseCase` y `DeleteTestCaseUseCase` con un método cada uno y `.\mvnw.cmd -q -DskipTests compile` pasa.

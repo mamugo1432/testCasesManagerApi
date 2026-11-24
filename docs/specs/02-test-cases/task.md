@@ -60,7 +60,7 @@ Lombok, JUnit 5, Mockito, MockMvc, springdoc.
   - Depende de: T1.3.
   - Hecho cuando: existen `CreateTestCaseUseCase`, `ListTestCasesUseCase`, `GetTestCaseUseCase`, `UpdateTestCaseUseCase` y `DeleteTestCaseUseCase` con un método cada uno y `.\mvnw.cmd -q -DskipTests compile` pasa.
 
-- [ ] **T1.5 — Crear los puertos de salida** (~15 min)
+- [x] **T1.5 — Crear los puertos de salida** (~15 min)
   - RF: RF-003, RF-004, RF-019, RF-021 a RF-066.
   - Depende de: T1.3.
   - Hecho cuando: `TestCaseRepository` expone guardar, buscar por `id + projectId`, paginar por proyecto, borrar y reemplazar hijos, y `TagRepository` expone buscar por nombres normalizados y crear, con `.\mvnw.cmd -q -DskipTests compile` en verde.

@@ -65,7 +65,7 @@ Lombok, JUnit 5, Mockito, MockMvc, springdoc.
   - Depende de: T1.3.
   - Hecho cuando: `TestCaseRepository` expone guardar, buscar por `id + projectId`, paginar por proyecto, borrar y reemplazar hijos, y `TagRepository` expone buscar por nombres normalizados y crear, con `.\mvnw.cmd -q -DskipTests compile` en verde.
 
-- [ ] **T1.6 — Crear las excepciones de dominio** (~15 min)
+- [x] **T1.6 — Crear las excepciones de dominio** (~15 min)
   - RF: RF-004, RF-015, RF-019, RF-025, RF-036, RF-039, RF-041, RF-047, RF-060, RF-061, RF-066, RF-070, RF-074, RF-075.
   - Depende de: T1.3.
   - Hecho cuando: existen `TestCaseNotFoundException`, `TagConflictException`, `InvalidTagNameException`, `InvalidPageException` e `InvalidTestCaseStateException` con los mensajes de la spec y `.\mvnw.cmd -q -DskipTests compile` pasa.

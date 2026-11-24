@@ -45,7 +45,7 @@ Lombok, JUnit 5, Mockito, MockMvc, springdoc.
   - Depende de: T0.1.
   - Hecho cuando: `Priority` contiene exactamente `HIGH`, `MEDIUM`, `LOW` y `Status` contiene `IN_PROGRESS`, `COMPLETED`, y `.\mvnw.cmd -q -DskipTests compile` termina en `BUILD SUCCESS`.
 
-- [ ] **T1.2 — Crear los POJOs de dominio auxiliares** (~20 min)
+- [x] **T1.2 — Crear los POJOs de dominio auxiliares** (~20 min)
   - RF: RF-013, RF-014, RF-021 a RF-026, RF-049 a RF-057, RF-058 a RF-066.
   - Depende de: T1.1.
   - Hecho cuando: existen `TestStep`, `Tag`, `TagName` y `PageResult` con los campos del plan y `.\mvnw.cmd -q -DskipTests compile` termina en `BUILD SUCCESS`.

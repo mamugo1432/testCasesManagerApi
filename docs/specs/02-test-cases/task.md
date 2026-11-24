@@ -50,7 +50,7 @@ Lombok, JUnit 5, Mockito, MockMvc, springdoc.
   - Depende de: T1.1.
   - Hecho cuando: existen `TestStep`, `Tag`, `TagName` y `PageResult` con los campos del plan y `.\mvnw.cmd -q -DskipTests compile` termina en `BUILD SUCCESS`.
 
-- [ ] **T1.3 — Crear el modelo `TestCase`** (~15 min)
+- [x] **T1.3 — Crear el modelo `TestCase`** (~15 min)
   - RF: RF-007 a RF-048, RF-067 a RF-072.
   - Depende de: T1.1, T1.2.
   - Hecho cuando: `TestCase` expone `id`, `projectId`, `title`, `description`, `expectedResult`, `priority`, `status`, `createdAt`, `steps` y `tags`, inicializa las listas vacías y compila.
